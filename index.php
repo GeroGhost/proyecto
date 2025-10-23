@@ -29,13 +29,12 @@ $total_clientes = $conn->query($sql_clientes)->fetch_assoc()['total'];
 $sql_grafico_ventas = "SELECT DATE_FORMAT(fecha_venta, '%Y-%m') as mes, SUM(total) as total 
                        FROM ventas WHERE estado='completada' 
                        GROUP BY DATE_FORMAT(fecha_venta, '%Y-%m') 
-                       ORDER BY mes DESC LIMIT 12";
+                       ORDER BY mes ASC LIMIT 12";
 $result_grafico = $conn->query($sql_grafico_ventas);
 $datos_grafico = [];
 while($row = $result_grafico->fetch_assoc()) {
     $datos_grafico[] = $row;
 }
-$datos_grafico = array_reverse($datos_grafico);
 
 // Ventas por categoría
 $sql_categorias = "SELECT c.nombre, SUM(dv.subtotal) as total
@@ -44,7 +43,7 @@ $sql_categorias = "SELECT c.nombre, SUM(dv.subtotal) as total
                    INNER JOIN categorias c ON p.categoria_id = c.id
                    INNER JOIN ventas v ON dv.venta_id = v.id
                    WHERE v.estado='completada'
-                   GROUP BY c.id
+                   GROUP BY c.id, c.nombre
                    LIMIT 5";
 $result_categorias = $conn->query($sql_categorias);
 $datos_categorias = [];
@@ -125,6 +124,10 @@ while($row = $result_categorias->fetch_assoc()) {
             text-transform: uppercase;
         }
         .h5 { font-size: 1.25rem; font-weight: 700; }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
     </style>
 </head>
 <body>
@@ -298,7 +301,9 @@ while($row = $result_categorias->fetch_assoc()) {
                                 <h6 class="m-0 font-weight-bold" style="color: var(--primary);">Resumen de Ventas</h6>
                             </div>
                             <div class="card-body">
-                                <canvas id="ventasChart" height="100"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="ventasChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -309,14 +314,16 @@ while($row = $result_categorias->fetch_assoc()) {
                                 <h6 class="m-0 font-weight-bold" style="color: var(--primary);">Ventas por Categoría</h6>
                             </div>
                             <div class="card-body">
-                                <canvas id="categoriasChart"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="categoriasChart"></canvas>
+                                </div>
                                 <div class="mt-4 text-center small">
-                                    <?php foreach($datos_categorias as $index => $cat): ?>
+                                    <?php 
+                                    $colores = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
+                                    foreach($datos_categorias as $index => $cat): 
+                                    ?>
                                         <span class="mr-2">
-                                            <i class="fas fa-circle" style="color: <?php 
-                                                $colores = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
-                                                echo $colores[$index % 5]; 
-                                            ?>;"></i> 
+                                            <i class="fas fa-circle" style="color: <?php echo $colores[$index % 5]; ?>;"></i> 
                                             <?php echo $cat['nombre']; ?>
                                         </span>
                                     <?php endforeach; ?>
@@ -339,60 +346,110 @@ while($row = $result_categorias->fetch_assoc()) {
     </div>
     
     <script>
+        console.log('Inicializando gráficos...');
+        
+        // Datos desde PHP
+        const datosVentas = <?php echo json_encode($datos_grafico); ?>;
+        const datosCategorias = <?php echo json_encode($datos_categorias); ?>;
+        
+        console.log('Datos de ventas:', datosVentas);
+        console.log('Datos de categorías:', datosCategorias);
+        
         // Gráfico de Ventas
-        const ctxVentas = document.getElementById('ventasChart').getContext('2d');
-        new Chart(ctxVentas, {
-            type: 'line',
-            data: {
-                labels: <?php echo json_encode(array_column($datos_grafico, 'mes')); ?>,
-                datasets: [{
-                    label: 'Ventas',
-                    data: <?php echo json_encode(array_column($datos_grafico, 'total')); ?>,
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return ' + value.toLocaleString();
+        if (datosVentas && datosVentas.length > 0) {
+            const ctxVentas = document.getElementById('ventasChart');
+            if (ctxVentas) {
+                new Chart(ctxVentas, {
+                    type: 'line',
+                    data: {
+                        labels: datosVentas.map(item => item.mes),
+                        datasets: [{
+                            label: 'Ventas',
+                            data: datosVentas.map(item => parseFloat(item.total)),
+                            borderColor: '#4e73df',
+                            backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '$' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString('es-AR');
+                                    }
+                                }
                             }
                         }
                     }
-                }
+                });
+                console.log('Gráfico de ventas creado exitosamente');
+            } else {
+                console.error('No se encontró el canvas ventasChart');
             }
-        });
+        } else {
+            console.warn('No hay datos de ventas para mostrar');
+            document.getElementById('ventasChart').parentElement.innerHTML = '<p class="text-center text-muted p-5">No hay datos de ventas disponibles</p>';
+        }
         
         // Gráfico de Categorías
-        const ctxCategorias = document.getElementById('categoriasChart').getContext('2d');
-        new Chart(ctxCategorias, {
-            type: 'doughnut',
-            data: {
-                labels: <?php echo json_encode(array_column($datos_categorias, 'nombre')); ?>,
-                datasets: [{
-                    data: <?php echo json_encode(array_column($datos_categorias, 'total')); ?>,
-                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
-                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: false }
-                }
+        if (datosCategorias && datosCategorias.length > 0) {
+            const ctxCategorias = document.getElementById('categoriasChart');
+            if (ctxCategorias) {
+                new Chart(ctxCategorias, {
+                    type: 'doughnut',
+                    data: {
+                        labels: datosCategorias.map(item => item.nombre),
+                        datasets: [{
+                            data: datosCategorias.map(item => parseFloat(item.total)),
+                            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                            hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617'],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return label + ': $' + value.toLocaleString('es-AR', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Gráfico de categorías creado exitosamente');
+            } else {
+                console.error('No se encontró el canvas categoriasChart');
             }
-        });
+        } else {
+            console.warn('No hay datos de categorías para mostrar');
+            document.getElementById('categoriasChart').parentElement.innerHTML = '<p class="text-center text-muted p-5">No hay datos de categorías disponibles</p>';
+        }
     </script>
 </body>
 </html>
