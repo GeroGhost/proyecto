@@ -49,25 +49,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($accion === 'eliminar') {
             $id = intval($_POST['id']);
-            $sql = "DELETE FROM productos WHERE id=?";
+            $sql = "UPDATE productos SET estado=0 WHERE id=?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $id);
             
             if ($stmt->execute()) {
-                $mensaje = "Producto eliminado exitosamente";
+                $mensaje = "Producto desactivado exitosamente";
                 $tipo_mensaje = "success";
             } else {
-                $mensaje = "Error al eliminar producto";
+                $mensaje = "Error al desactivar producto";
                 $tipo_mensaje = "danger";
             }
         }
     }
 }
 
+// Obtener productos con stock bajo
+$sql_stock_bajo = "SELECT COUNT(*) as total_critico FROM productos WHERE stock <= 5 AND estado=1";
+$stock_critico = $conn->query($sql_stock_bajo)->fetch_assoc()['total_critico'];
+
+$sql_stock_bajo2 = "SELECT COUNT(*) as total_bajo FROM productos WHERE stock > 5 AND stock <= 10 AND estado=1";
+$stock_bajo = $conn->query($sql_stock_bajo2)->fetch_assoc()['total_bajo'];
+
 // Obtener productos
 $sql_productos = "SELECT p.*, c.nombre as categoria_nombre FROM productos p 
                   LEFT JOIN categorias c ON p.categoria_id = c.id 
-                  ORDER BY p.id DESC";
+                  WHERE p.estado=1
+                  ORDER BY p.stock ASC, p.id DESC";
 $result_productos = $conn->query($sql_productos);
 
 // Obtener categorías para el select
@@ -125,6 +133,13 @@ $result_categorias = $conn->query($sql_categorias);
             background-color: rgba(255,255,255,.1);
         }
         .nav-link i { width: 2rem; font-size: 0.85rem; }
+        .sidebar-heading {
+            color: rgba(255,255,255,.5);
+            padding: 0 1rem;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
         #content-wrapper { flex: 1; display: flex; flex-direction: column; }
         .topbar {
             height: 4.375rem;
@@ -139,6 +154,36 @@ $result_categorias = $conn->query($sql_categorias);
         .table-responsive { max-height: 600px; overflow-y: auto; }
         .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
         .badge { padding: 0.5em 0.75em; }
+        
+        /* Estilos para alertas de stock */
+        .alert-stock {
+            border-left: 4px solid #f6c23e;
+            background: linear-gradient(90deg, #fff3cd 0%, #ffffff 100%);
+            animation: pulseWarning 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulseWarning {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(246, 194, 62, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(246, 194, 62, 0); }
+        }
+        
+        .stock-critico {
+            background-color: #f8d7da !important;
+        }
+        
+        .stock-bajo {
+            background-color: #fff3cd !important;
+        }
+        
+        .stock-card {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .stock-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
@@ -151,14 +196,14 @@ $result_categorias = $conn->query($sql_categorias);
             </a>
             <hr class="sidebar-divider my-0" style="border-color: rgba(255,255,255,.2)">
             <li class="nav-item">
-                <a class="nav-link active" href="index.php">
+                <a class="nav-link" href="index.php">
                     <i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span>
                 </a>
             </li>
             <hr class="sidebar-divider" style="border-color: rgba(255,255,255,.2)">
-            <div class="sidebar-heading" style="color: rgba(255,255,255,.5); padding: 0 1rem; font-size: 0.65rem; text-transform: uppercase; margin-top: 0.5rem;">Gestión</div>
+            <div class="sidebar-heading">Gestión</div>
             <li class="nav-item">
-                <a class="nav-link" href="productos.php">
+                <a class="nav-link active" href="productos.php">
                     <i class="fas fa-fw fa-box"></i><span>Productos</span>
                 </a>
             </li>
@@ -173,7 +218,7 @@ $result_categorias = $conn->query($sql_categorias);
                 </a>
             </li>
             <hr class="sidebar-divider" style="border-color: rgba(255,255,255,.2)">
-            <div class="sidebar-heading" style="color: rgba(255,255,255,.5); padding: 0 1rem; font-size: 0.65rem; text-transform: uppercase; margin-top: 0.5rem;">Operaciones</div>
+            <div class="sidebar-heading">Operaciones</div>
             <li class="nav-item">
                 <a class="nav-link" href="ventas.php">
                     <i class="fas fa-fw fa-cash-register"></i><span>Ventas</span>
@@ -228,6 +273,83 @@ $result_categorias = $conn->query($sql_categorias);
                     </div>
                 <?php endif; ?>
                 
+                <!-- ALERTA DE STOCK BAJO - NUEVA SECCIÓN -->
+                <?php if ($stock_critico > 0 || $stock_bajo > 0): ?>
+                <div class="alert alert-stock alert-dismissible fade show mb-4" role="alert">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
+                            <div>
+                                <h5 class="mb-1">⚠️ Atención: Productos con Stock Bajo</h5>
+                                <p class="mb-0">
+                                    <?php if ($stock_critico > 0): ?>
+                                        <span class="badge bg-danger me-2"><?php echo $stock_critico; ?> productos en stock crítico</span>
+                                    <?php endif; ?>
+                                    <?php if ($stock_bajo > 0): ?>
+                                        <span class="badge bg-warning text-dark"><?php echo $stock_bajo; ?> productos en stock bajo</span>
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#alertaStockDetalle">
+                            <i class="fas fa-eye"></i> Ver Detalles
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <!-- Detalle de productos con stock bajo -->
+                <div class="collapse mb-4" id="alertaStockDetalle">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fas fa-boxes"></i> Productos que Requieren Atención</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <?php
+                                $sql_productos_bajos = "SELECT p.*, c.nombre as categoria_nombre 
+                                                        FROM productos p 
+                                                        LEFT JOIN categorias c ON p.categoria_id = c.id 
+                                                        WHERE p.stock <= 10 AND p.estado=1 
+                                                        ORDER BY p.stock ASC";
+                                $result_bajos = $conn->query($sql_productos_bajos);
+                                
+                                while($prod_bajo = $result_bajos->fetch_assoc()):
+                                    $es_critico = $prod_bajo['stock'] <= 5;
+                                ?>
+                                <div class="col-md-4">
+                                    <div class="card stock-card <?php echo $es_critico ? 'border-danger' : 'border-warning'; ?>">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="card-title mb-1"><?php echo $prod_bajo['nombre']; ?></h6>
+                                                    <small class="text-muted"><?php echo $prod_bajo['categoria_nombre']; ?></small>
+                                                </div>
+                                                <span class="badge <?php echo $es_critico ? 'bg-danger' : 'bg-warning text-dark'; ?>" style="font-size: 1rem;">
+                                                    <?php echo $prod_bajo['stock']; ?>
+                                                </span>
+                                            </div>
+                                            <hr>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="<?php echo $es_critico ? 'text-danger' : 'text-warning'; ?>">
+                                                    <i class="fas fa-arrow-down"></i> 
+                                                    <?php echo $es_critico ? 'Stock crítico' : 'Stock bajo'; ?>
+                                                </small>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editarProducto(<?php echo htmlspecialchars(json_encode($prod_bajo)); ?>)">
+                                                    <i class="fas fa-edit"></i> Actualizar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endwhile; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <!-- FIN DE ALERTA DE STOCK BAJO -->
+                
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Gestión de Productos</h1>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProducto">
@@ -256,14 +378,29 @@ $result_categorias = $conn->query($sql_categorias);
                                 </thead>
                                 <tbody>
                                     <?php while($row = $result_productos->fetch_assoc()): ?>
-                                    <tr>
+                                    <tr class="<?php echo $row['stock'] <= 5 ? 'stock-critico' : ($row['stock'] <= 10 ? 'stock-bajo' : ''); ?>">
                                         <td><?php echo $row['id']; ?></td>
-                                        <td><?php echo $row['nombre']; ?></td>
+                                        <td>
+                                            <?php if($row['stock'] <= 5): ?>
+                                                <i class="fas fa-exclamation-circle text-danger me-1" title="Stock crítico"></i>
+                                            <?php elseif($row['stock'] <= 10): ?>
+                                                <i class="fas fa-exclamation-triangle text-warning me-1" title="Stock bajo"></i>
+                                            <?php endif; ?>
+                                            <strong><?php echo $row['nombre']; ?></strong>
+                                        </td>
                                         <td><?php echo substr($row['descripcion'], 0, 50); ?>...</td>
-                                        <td><?php echo $row['categoria_nombre']; ?></td>
+                                        <td><span class="badge bg-info"><?php echo $row['categoria_nombre']; ?></span></td>
                                         <td><?php echo formatear_precio($row['precio']); ?></td>
                                         <td>
-                                            <span class="badge <?php echo $row['stock'] < 10 ? 'bg-danger' : 'bg-success'; ?>">
+                                            <?php
+                                            $badge_class = 'bg-success';
+                                            if ($row['stock'] <= 5) {
+                                                $badge_class = 'bg-danger';
+                                            } elseif ($row['stock'] <= 10) {
+                                                $badge_class = 'bg-warning text-dark';
+                                            }
+                                            ?>
+                                            <span class="badge <?php echo $badge_class; ?>">
                                                 <?php echo $row['stock']; ?>
                                             </span>
                                         </td>
@@ -335,6 +472,7 @@ $result_categorias = $conn->query($sql_categorias);
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Stock</label>
                                 <input type="number" class="form-control" name="stock" id="stock" required>
+                                <small class="text-muted">Alerta: menos de 10 unidades</small>
                             </div>
                         </div>
                     </div>

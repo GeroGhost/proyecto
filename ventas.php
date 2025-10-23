@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
             }
             
             $conn->commit();
-            $mensaje = "Venta registrada exitosamente";
+            $mensaje = "Venta #" . $venta_id . " registrada exitosamente";
             $tipo_mensaje = "success";
         } catch (Exception $e) {
             $conn->rollback();
@@ -51,12 +51,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     }
 }
 
-// Obtener ventas
+// Filtros
+$filtro_cliente = isset($_GET['cliente']) ? intval($_GET['cliente']) : 0;
+$filtro_metodo = isset($_GET['metodo']) ? limpiar_entrada($_GET['metodo']) : '';
+$filtro_fecha_desde = isset($_GET['fecha_desde']) ? $_GET['fecha_desde'] : '';
+$filtro_fecha_hasta = isset($_GET['fecha_hasta']) ? $_GET['fecha_hasta'] : '';
+$busqueda = isset($_GET['buscar']) ? limpiar_entrada($_GET['buscar']) : '';
+
+// Construir query con filtros
 $sql_ventas = "SELECT v.*, c.nombre as cliente_nombre, c.apellido as cliente_apellido 
                FROM ventas v 
                INNER JOIN clientes c ON v.cliente_id = c.id 
-               ORDER BY v.id DESC";
+               WHERE 1=1";
+
+if ($filtro_cliente > 0) {
+    $sql_ventas .= " AND v.cliente_id = " . $filtro_cliente;
+}
+
+if ($filtro_metodo) {
+    $sql_ventas .= " AND v.metodo_pago = '" . $filtro_metodo . "'";
+}
+
+if ($filtro_fecha_desde) {
+    $sql_ventas .= " AND DATE(v.fecha_venta) >= '" . $filtro_fecha_desde . "'";
+}
+
+if ($filtro_fecha_hasta) {
+    $sql_ventas .= " AND DATE(v.fecha_venta) <= '" . $filtro_fecha_hasta . "'";
+}
+
+if ($busqueda) {
+    $sql_ventas .= " AND (c.nombre LIKE '%" . $busqueda . "%' OR c.apellido LIKE '%" . $busqueda . "%' OR v.id LIKE '%" . $busqueda . "%')";
+}
+
+$sql_ventas .= " ORDER BY v.id DESC LIMIT 100";
 $result_ventas = $conn->query($sql_ventas);
+
+// Calcular totales con filtros
+$sql_totales = "SELECT COUNT(*) as cantidad, SUM(v.total) as total_ingresos
+                FROM ventas v 
+                INNER JOIN clientes c ON v.cliente_id = c.id 
+                WHERE v.estado='completada'";
+
+if ($filtro_cliente > 0) $sql_totales .= " AND v.cliente_id = " . $filtro_cliente;
+if ($filtro_metodo) $sql_totales .= " AND v.metodo_pago = '" . $filtro_metodo . "'";
+if ($filtro_fecha_desde) $sql_totales .= " AND DATE(v.fecha_venta) >= '" . $filtro_fecha_desde . "'";
+if ($filtro_fecha_hasta) $sql_totales .= " AND DATE(v.fecha_venta) <= '" . $filtro_fecha_hasta . "'";
+if ($busqueda) $sql_totales .= " AND (c.nombre LIKE '%" . $busqueda . "%' OR c.apellido LIKE '%" . $busqueda . "%' OR v.id LIKE '%" . $busqueda . "%')";
+
+$totales = $conn->query($sql_totales)->fetch_assoc();
 
 // Obtener clientes activos
 $sql_clientes = "SELECT * FROM clientes WHERE estado=1 ORDER BY nombre";
@@ -65,6 +108,10 @@ $result_clientes = $conn->query($sql_clientes);
 // Obtener productos activos
 $sql_productos = "SELECT * FROM productos WHERE estado=1 AND stock > 0 ORDER BY nombre";
 $result_productos = $conn->query($sql_productos);
+
+// Obtener clientes para filtro
+$sql_clientes_filtro = "SELECT * FROM clientes WHERE estado=1 ORDER BY nombre";
+$result_clientes_filtro = $conn->query($sql_clientes_filtro);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -117,6 +164,13 @@ $result_productos = $conn->query($sql_productos);
             background-color: rgba(255,255,255,.1);
         }
         .nav-link i { width: 2rem; font-size: 0.85rem; }
+        .sidebar-heading {
+            color: rgba(255,255,255,.5);
+            padding: 0 1rem;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
         #content-wrapper { flex: 1; display: flex; flex-direction: column; }
         .topbar {
             height: 4.375rem;
@@ -138,11 +192,24 @@ $result_productos = $conn->query($sql_productos);
             font-weight: bold;
             color: var(--success);
         }
+        .filtros-card {
+            background-color: #f8f9fc;
+            border: 1px solid #e3e6f0;
+            border-radius: 0.35rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .stat-box {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.35rem;
+            border-left: 3px solid var(--primary);
+        }
     </style>
 </head>
 <body>
     <div id="wrapper">
-        <!-- Sidebar -->
+        <!-- Sidebar (mismo código anterior) -->
         <ul class="navbar-nav" id="sidebar-wrapper">
             <a class="sidebar-brand" href="index.php">
                 <div class="sidebar-brand-icon"><i class="fas fa-shopping-cart"></i></div>
@@ -150,12 +217,12 @@ $result_productos = $conn->query($sql_productos);
             </a>
             <hr class="sidebar-divider my-0" style="border-color: rgba(255,255,255,.2)">
             <li class="nav-item">
-                <a class="nav-link active" href="index.php">
+                <a class="nav-link" href="index.php">
                     <i class="fas fa-fw fa-tachometer-alt"></i><span>Dashboard</span>
                 </a>
             </li>
             <hr class="sidebar-divider" style="border-color: rgba(255,255,255,.2)">
-            <div class="sidebar-heading" style="color: rgba(255,255,255,.5); padding: 0 1rem; font-size: 0.65rem; text-transform: uppercase; margin-top: 0.5rem;">Gestión</div>
+            <div class="sidebar-heading">Gestión</div>
             <li class="nav-item">
                 <a class="nav-link" href="productos.php">
                     <i class="fas fa-fw fa-box"></i><span>Productos</span>
@@ -172,9 +239,9 @@ $result_productos = $conn->query($sql_productos);
                 </a>
             </li>
             <hr class="sidebar-divider" style="border-color: rgba(255,255,255,.2)">
-            <div class="sidebar-heading" style="color: rgba(255,255,255,.5); padding: 0 1rem; font-size: 0.65rem; text-transform: uppercase; margin-top: 0.5rem;">Operaciones</div>
+            <div class="sidebar-heading">Operaciones</div>
             <li class="nav-item">
-                <a class="nav-link" href="ventas.php">
+                <a class="nav-link active" href="ventas.php">
                     <i class="fas fa-fw fa-cash-register"></i><span>Ventas</span>
                 </a>
             </li>
@@ -234,6 +301,81 @@ $result_productos = $conn->query($sql_productos);
                     </button>
                 </div>
                 
+                <!-- Estadísticas rápidas -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="stat-box">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">Ventas Filtradas</small>
+                                    <h4 class="mb-0"><?php echo $totales['cantidad'] ?? 0; ?></h4>
+                                </div>
+                                <i class="fas fa-shopping-cart fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-box" style="border-left-color: var(--success)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">Ingresos Totales</small>
+                                    <h4 class="mb-0 text-success"><?php echo formatear_precio($totales['total_ingresos'] ?? 0); ?></h4>
+                                </div>
+                                <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="filtros-card">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label"><i class="fas fa-search"></i> Buscar</label>
+                            <input type="text" class="form-control" name="buscar" value="<?php echo $busqueda; ?>" placeholder="ID, Cliente...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label"><i class="fas fa-user"></i> Cliente</label>
+                            <select class="form-select" name="cliente">
+                                <option value="">Todos</option>
+                                <?php while($cli = $result_clientes_filtro->fetch_assoc()): ?>
+                                    <option value="<?php echo $cli['id']; ?>" <?php echo $filtro_cliente == $cli['id'] ? 'selected' : ''; ?>>
+                                        <?php echo $cli['nombre'] . ' ' . $cli['apellido']; ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"><i class="fas fa-credit-card"></i> Método</label>
+                            <select class="form-select" name="metodo">
+                                <option value="">Todos</option>
+                                <option value="efectivo" <?php echo $filtro_metodo == 'efectivo' ? 'selected' : ''; ?>>Efectivo</option>
+                                <option value="tarjeta" <?php echo $filtro_metodo == 'tarjeta' ? 'selected' : ''; ?>>Tarjeta</option>
+                                <option value="transferencia" <?php echo $filtro_metodo == 'transferencia' ? 'selected' : ''; ?>>Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"><i class="fas fa-calendar"></i> Desde</label>
+                            <input type="date" class="form-control" name="fecha_desde" value="<?php echo $filtro_fecha_desde; ?>">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label"><i class="fas fa-calendar"></i> Hasta</label>
+                            <input type="date" class="form-control" name="fecha_hasta" value="<?php echo $filtro_fecha_hasta; ?>">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                            <a href="ventas.php" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpiar
+                            </a>
+                            <button type="button" class="btn btn-success" onclick="window.location.href='exportar_excel.php?tipo=ventas'">
+                                <i class="fas fa-file-excel"></i> Exportar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
                 <div class="card">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold" style="color: var(--primary);">Historial de Ventas</h6>
@@ -253,13 +395,27 @@ $result_productos = $conn->query($sql_productos);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($row = $result_ventas->fetch_assoc()): ?>
+                                    <?php 
+                                    if($result_ventas->num_rows > 0):
+                                        while($row = $result_ventas->fetch_assoc()): 
+                                    ?>
                                     <tr>
-                                        <td>#<?php echo $row['id']; ?></td>
-                                        <td><?php echo $row['cliente_nombre'] . ' ' . $row['cliente_apellido']; ?></td>
+                                        <td><strong>#<?php echo str_pad($row['id'], 6, '0', STR_PAD_LEFT); ?></strong></td>
+                                        <td>
+                                            <i class="fas fa-user-circle text-primary"></i>
+                                            <?php echo $row['cliente_nombre'] . ' ' . $row['cliente_apellido']; ?>
+                                        </td>
                                         <td class="text-success fw-bold"><?php echo formatear_precio($row['total']); ?></td>
                                         <td>
+                                            <?php
+                                            $iconos = [
+                                                'efectivo' => 'fa-money-bill-wave',
+                                                'tarjeta' => 'fa-credit-card',
+                                                'transferencia' => 'fa-exchange-alt'
+                                            ];
+                                            ?>
                                             <span class="badge bg-info">
+                                                <i class="fas <?php echo $iconos[$row['metodo_pago']] ?? 'fa-wallet'; ?>"></i>
                                                 <?php echo ucfirst($row['metodo_pago']); ?>
                                             </span>
                                         </td>
@@ -270,12 +426,25 @@ $result_productos = $conn->query($sql_productos);
                                         </td>
                                         <td><?php echo formatear_fecha($row['fecha_venta']); ?></td>
                                         <td>
-                                            <button class="btn btn-info btn-sm" onclick="verDetalle(<?php echo $row['id']; ?>)">
-                                                <i class="fas fa-eye"></i> Ver
+                                            <button class="btn btn-info btn-sm" onclick="verDetalle(<?php echo $row['id']; ?>)" title="Ver Detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-primary btn-sm" onclick="imprimirTicket(<?php echo $row['id']; ?>)" title="Imprimir">
+                                                <i class="fas fa-print"></i>
                                             </button>
                                         </td>
                                     </tr>
-                                    <?php endwhile; ?>
+                                    <?php 
+                                        endwhile;
+                                    else:
+                                    ?>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                                            No se encontraron ventas con los filtros aplicados
+                                        </td>
+                                    </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -285,7 +454,7 @@ $result_productos = $conn->query($sql_productos);
         </div>
     </div>
     
-    <!-- Modal Nueva Venta -->
+    <!-- Modal Nueva Venta (mismo código anterior) -->
     <div class="modal fade" id="modalVenta" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -328,6 +497,7 @@ $result_productos = $conn->query($sql_productos);
                                     <select class="form-select" name="cliente_id" required>
                                         <option value="">Seleccionar...</option>
                                         <?php 
+                                        $result_clientes->data_seek(0);
                                         while($cli = $result_clientes->fetch_assoc()): 
                                         ?>
                                             <option value="<?php echo $cli['id']; ?>">
@@ -340,9 +510,9 @@ $result_productos = $conn->query($sql_productos);
                                 <div class="mb-3">
                                     <label class="form-label">Método de Pago</label>
                                     <select class="form-select" name="metodo_pago" required>
-                                        <option value="efectivo">Efectivo</option>
-                                        <option value="tarjeta">Tarjeta</option>
-                                        <option value="transferencia">Transferencia</option>
+                                        <option value="efectivo">💵 Efectivo</option>
+                                        <option value="tarjeta">💳 Tarjeta</option>
+                                        <option value="transferencia">🔄 Transferencia</option>
                                     </select>
                                 </div>
                                 
@@ -385,7 +555,7 @@ $result_productos = $conn->query($sql_productos);
                 if (existe.cantidad < producto.stock) {
                     existe.cantidad++;
                 } else {
-                    alert('Stock insuficiente');
+                    alert('⚠️ Stock insuficiente');
                     return;
                 }
             } else {
@@ -423,13 +593,19 @@ $result_productos = $conn->query($sql_productos);
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <strong>${prod.nombre}</strong><br>
-                                <small>$${prod.precio.toFixed(2)} x ${prod.cantidad} = $${subtotal.toFixed(2)}</small>
+                                <small class="text-muted">${prod.precio.toFixed(2)} x ${prod.cantidad} = <span class="text-success fw-bold">${subtotal.toFixed(2)}</span></small>
                             </div>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)">-</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled>${prod.cantidad}</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, 1)">+</button>
-                                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)" title="Disminuir">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled style="min-width: 40px;">
+                                    ${prod.cantidad}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, 1)" title="Aumentar">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})" title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -439,7 +615,7 @@ $result_productos = $conn->query($sql_productos);
             });
             
             container.innerHTML = html;
-            document.getElementById('total_display').innerText = '$' + total.toFixed(2);
+            document.getElementById('total_display').innerText = ' + total.toFixed(2);
             document.getElementById('total_venta').value = total.toFixed(2);
             document.getElementById('productos_json').value = JSON.stringify(carrito);
             document.getElementById('btnGuardarVenta').disabled = false;
@@ -455,7 +631,7 @@ $result_productos = $conn->query($sql_productos);
             }
             
             if (nuevaCantidad > producto.stock) {
-                alert('Stock insuficiente');
+                alert('⚠️ Stock insuficiente. Disponible: ' + producto.stock);
                 return;
             }
             
@@ -464,18 +640,33 @@ $result_productos = $conn->query($sql_productos);
         }
         
         function eliminarDelCarrito(index) {
-            carrito.splice(index, 1);
-            actualizarCarrito();
+            if (confirm('¿Eliminar este producto del carrito?')) {
+                carrito.splice(index, 1);
+                actualizarCarrito();
+            }
         }
         
         function verDetalle(id) {
             window.location.href = 'detalle_venta.php?id=' + id;
         }
         
+        function imprimirTicket(id) {
+            window.open('detalle_venta.php?id=' + id, '_blank');
+        }
+        
         document.getElementById('modalVenta').addEventListener('hidden.bs.modal', function () {
             carrito = [];
             actualizarCarrito();
             document.getElementById('formVenta').reset();
+        });
+        
+        // Validar formulario antes de enviar
+        document.getElementById('formVenta').addEventListener('submit', function(e) {
+            if (carrito.length === 0) {
+                e.preventDefault();
+                alert('⚠️ Debe agregar al menos un producto');
+                return false;
+            }
         });
     </script>
 </body>
