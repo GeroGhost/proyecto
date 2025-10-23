@@ -22,6 +22,8 @@ $result_clientes = $conn->query($sql_clientes);
 // Si se selecciona un cliente específico
 $cliente_seleccionado = null;
 $movimientos_cliente = [];
+$saldo_total = 0;
+
 if (isset($_GET['cliente_id'])) {
     $cliente_id = intval($_GET['cliente_id']);
     
@@ -46,6 +48,19 @@ if (isset($_GET['cliente_id'])) {
     while($row = $result_movimientos->fetch_assoc()) {
         $movimientos_cliente[] = $row;
     }
+    
+    // ⭐ OBTENER EL ÚLTIMO SALDO REGISTRADO
+    $sql_ultimo_saldo = "SELECT saldo FROM cuentas_corrientes 
+                         WHERE cliente_id = ? 
+                         ORDER BY fecha_movimiento DESC, id DESC 
+                         LIMIT 1";
+    $stmt_saldo = $conn->prepare($sql_ultimo_saldo);
+    $stmt_saldo->bind_param("i", $cliente_id);
+    $stmt_saldo->execute();
+    $result_saldo = $stmt_saldo->get_result();
+    if ($result_saldo->num_rows > 0) {
+        $saldo_total = $result_saldo->fetch_assoc()['saldo'];
+    }
 }
 
 // Registrar pago
@@ -66,10 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $saldo_actual = $stmt_saldo->get_result()->fetch_assoc()['saldo'];
         $nuevo_saldo = $saldo_actual - $importe;
         
+        // ⭐ CORRECCIÓN: bind_param con 6 parámetros (isddss)
         $sql_pago = "INSERT INTO cuentas_corrientes (cliente_id, tipo_movimiento, concepto, importe, saldo, fecha_movimiento, observaciones, usuario_id) 
                      VALUES (?, 'haber', ?, ?, ?, ?, ?, 1)";
         $stmt_pago = $conn->prepare($sql_pago);
-        $stmt_pago->bind_param("isdds", $cliente_id, $concepto, $importe, $nuevo_saldo, $fecha_movimiento, $observaciones);
+        $stmt_pago->bind_param("isddss", $cliente_id, $concepto, $importe, $nuevo_saldo, $fecha_movimiento, $observaciones);
         
         if ($stmt_pago->execute()) {
             $mensaje = "Pago registrado exitosamente";
@@ -317,13 +333,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                             <div class="card">
                                 <div class="card-body text-center">
                                     <h6 class="text-muted">SALDO ACTUAL</h6>
-                                    <?php
-                                    $saldo_total = 0;
-                                    foreach($movimientos_cliente as $mov) {
-                                        $saldo_total = $mov['saldo'];
-                                    }
-                                    $saldo_total = end($movimientos_cliente)['saldo'] ?? 0;
-                                    ?>
                                     <h2 class="<?php echo $saldo_total > 0 ? 'saldo-positivo' : 'saldo-negativo'; ?>">
                                         <?php echo formatear_precio($saldo_total); ?>
                                     </h2>

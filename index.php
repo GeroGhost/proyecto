@@ -1,6 +1,80 @@
 <?php
 require_once 'config.php';
 
+// 🔍 NUEVA FUNCIONALIDAD DE BÚSQUEDA
+$busqueda = isset($_GET['buscar']) ? limpiar_entrada($_GET['buscar']) : '';
+$resultados_busqueda = [];
+$hay_busqueda = !empty($busqueda);
+
+if ($hay_busqueda) {
+    // Buscar en múltiples tablas
+    
+    // 1. Buscar productos
+    $sql_productos_busqueda = "SELECT 'producto' as tipo, id, nombre as titulo, precio, stock, 
+                                CONCAT('Stock: ', stock, ' | Precio: ', precio) as detalle
+                                FROM productos 
+                                WHERE estado=1 AND (nombre LIKE ? OR descripcion LIKE ?)
+                                LIMIT 5";
+    $stmt = $conn->prepare($sql_productos_busqueda);
+    $busqueda_param = "%$busqueda%";
+    $stmt->bind_param("ss", $busqueda_param, $busqueda_param);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while($row = $result->fetch_assoc()) {
+        $resultados_busqueda[] = $row;
+    }
+    
+    // 2. Buscar clientes
+    $sql_clientes_busqueda = "SELECT 'cliente' as tipo, id, CONCAT(nombre, ' ', apellido) as titulo, 
+                               CONCAT('DNI: ', dni, ' | Tel: ', telefono) as detalle, 0 as precio, 0 as stock
+                               FROM clientes 
+                               WHERE estado=1 AND (nombre LIKE ? OR apellido LIKE ? OR dni LIKE ? OR email LIKE ?)
+                               LIMIT 5";
+    $stmt = $conn->prepare($sql_clientes_busqueda);
+    $stmt->bind_param("ssss", $busqueda_param, $busqueda_param, $busqueda_param, $busqueda_param);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while($row = $result->fetch_assoc()) {
+        $resultados_busqueda[] = $row;
+    }
+    
+    // 3. Buscar ventas
+    $sql_ventas_busqueda = "SELECT 'venta' as tipo, v.id, 
+                            CONCAT('Venta #', LPAD(v.id, 6, '0')) as titulo,
+                            CONCAT('Cliente: ', c.nombre, ' ', c.apellido, ' | Total: $', v.total) as detalle,
+                            v.total as precio, 0 as stock
+                            FROM ventas v
+                            INNER JOIN clientes c ON v.cliente_id = c.id
+                            WHERE v.id LIKE ? OR c.nombre LIKE ? OR c.apellido LIKE ?
+                            ORDER BY v.fecha_venta DESC
+                            LIMIT 5";
+    $stmt = $conn->prepare($sql_ventas_busqueda);
+    $stmt->bind_param("sss", $busqueda_param, $busqueda_param, $busqueda_param);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while($row = $result->fetch_assoc()) {
+        $resultados_busqueda[] = $row;
+    }
+    
+    // 4. Buscar facturas
+    $sql_facturas_busqueda = "SELECT 'factura' as tipo, f.id, 
+                              CONCAT('Factura ', f.numero_factura) as titulo,
+                              CONCAT('Cliente: ', c.nombre, ' ', c.apellido, ' | Total: $', f.total) as detalle,
+                              f.total as precio, 0 as stock
+                              FROM facturas f
+                              INNER JOIN clientes c ON f.cliente_id = c.id
+                              WHERE f.numero_factura LIKE ? OR c.nombre LIKE ? OR c.apellido LIKE ?
+                              ORDER BY f.fecha_emision DESC
+                              LIMIT 5";
+    $stmt = $conn->prepare($sql_facturas_busqueda);
+    $stmt->bind_param("sss", $busqueda_param, $busqueda_param, $busqueda_param);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while($row = $result->fetch_assoc()) {
+        $resultados_busqueda[] = $row;
+    }
+}
+
 // Obtener métricas del mes actual
 $mes_actual = date('Y-m');
 $sql_ventas_mes = "SELECT SUM(total) as total FROM ventas WHERE DATE_FORMAT(fecha_venta, '%Y-%m') = ? AND estado='completada'";
@@ -128,6 +202,94 @@ while($row = $result_categorias->fetch_assoc()) {
             position: relative;
             height: 300px;
         }
+        
+        /* 🔍 ESTILOS PARA LA BÚSQUEDA */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+        }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .search-results.show {
+            display: block;
+        }
+        .search-result-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e3e6f0;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .search-result-item:hover {
+            background-color: #f8f9fc;
+        }
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        .search-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .search-icon.producto { background-color: #e7f3ff; color: var(--info); }
+        .search-icon.cliente { background-color: #e8f5e9; color: var(--success); }
+        .search-icon.venta { background-color: #fff3e0; color: var(--warning); }
+        .search-icon.factura { background-color: #f3e5f5; color: #9c27b0; }
+        .search-result-content {
+            flex: 1;
+        }
+        .search-result-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        .search-result-detail {
+            font-size: 0.875rem;
+            color: #666;
+        }
+        .no-results {
+            padding: 2rem;
+            text-align: center;
+            color: #999;
+        }
+        .search-input-wrapper {
+            position: relative;
+        }
+        .search-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.25rem 0.5rem;
+            display: none;
+        }
+        .search-clear.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -200,11 +362,65 @@ while($row = $result_categorias->fetch_assoc()) {
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
-                <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100">
-                    <div class="input-group">
-                        <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar..." style="border-radius: 10rem;">
+                <!-- 🔍 BÚSQUEDA MEJORADA -->
+                <div class="search-container">
+                    <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100" method="GET" id="searchForm">
+                        <div class="input-group search-input-wrapper">
+                            <input type="text" 
+                                   class="form-control bg-light border-0 small" 
+                                   placeholder="Buscar productos, clientes, ventas..." 
+                                   name="buscar" 
+                                   id="searchInput"
+                                   value="<?php echo htmlspecialchars($busqueda); ?>"
+                                   style="border-radius: 10rem; padding-right: 40px;">
+                            <button type="button" class="search-clear <?php echo $hay_busqueda ? 'show' : ''; ?>" id="clearSearch">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Resultados de búsqueda -->
+                    <div class="search-results <?php echo $hay_busqueda ? 'show' : ''; ?>" id="searchResults">
+                        <?php if ($hay_busqueda): ?>
+                            <?php if (count($resultados_busqueda) > 0): ?>
+                                <?php foreach($resultados_busqueda as $resultado): ?>
+                                    <?php
+                                    $iconos = [
+                                        'producto' => 'fa-box',
+                                        'cliente' => 'fa-user',
+                                        'venta' => 'fa-shopping-cart',
+                                        'factura' => 'fa-file-invoice'
+                                    ];
+                                    $urls = [
+                                        'producto' => 'productos.php',
+                                        'cliente' => 'clientes.php',
+                                        'venta' => 'detalle_venta.php?id=' . $resultado['id'],
+                                        'factura' => 'facturas.php'
+                                    ];
+                                    ?>
+                                    <div class="search-result-item" onclick="window.location.href='<?php echo $urls[$resultado['tipo']]; ?>'">
+                                        <div class="search-icon <?php echo $resultado['tipo']; ?>">
+                                            <i class="fas <?php echo $iconos[$resultado['tipo']]; ?>"></i>
+                                        </div>
+                                        <div class="search-result-content">
+                                            <div class="search-result-title"><?php echo $resultado['titulo']; ?></div>
+                                            <div class="search-result-detail"><?php echo $resultado['detalle']; ?></div>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-secondary"><?php echo ucfirst($resultado['tipo']); ?></span>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="no-results">
+                                    <i class="fas fa-search fa-3x mb-3" style="color: #ddd;"></i>
+                                    <p>No se encontraron resultados para "<strong><?php echo htmlspecialchars($busqueda); ?></strong>"</p>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
                     </div>
-                </form>
+                </div>
+                
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="#">
@@ -345,10 +561,56 @@ while($row = $result_categorias->fetch_assoc()) {
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 🔍 FUNCIONALIDAD DE BÚSQUEDA
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const clearSearch = document.getElementById('clearSearch');
+        const searchForm = document.getElementById('searchForm');
+        
+        // Mostrar/ocultar botón de limpiar
+        searchInput.addEventListener('input', function() {
+            if (this.value.length > 0) {
+                clearSearch.classList.add('show');
+            } else {
+                clearSearch.classList.remove('show');
+                searchResults.classList.remove('show');
+            }
+        });
+        
+        // Limpiar búsqueda
+        clearSearch.addEventListener('click', function() {
+            searchInput.value = '';
+            clearSearch.classList.remove('show');
+            searchResults.classList.remove('show');
+            window.location.href = 'index.php';
+        });
+        
+        // Buscar al presionar Enter
+        searchForm.addEventListener('submit', function(e) {
+            if (searchInput.value.trim().length === 0) {
+                e.preventDefault();
+            }
+        });
+        
+        // Cerrar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                searchResults.classList.remove('show');
+            }
+        });
+        
+        // Mostrar resultados al hacer clic en el input si ya hay búsqueda
+        searchInput.addEventListener('focus', function() {
+            if (this.value.length > 0 && searchResults.children.length > 0) {
+                searchResults.classList.add('show');
+            }
+        });
+        
+        // GRÁFICOS
         console.log('Inicializando gráficos...');
         
-        // Datos desde PHP
         const datosVentas = <?php echo json_encode($datos_grafico); ?>;
         const datosCategorias = <?php echo json_encode($datos_categorias); ?>;
         

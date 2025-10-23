@@ -20,36 +20,45 @@ if ($conn->connect_error) {
 }
 
 $error = '';
+$debug_info = ''; // Para mostrar información de depuración
 
 // Procesar login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     
-    $sql = "SELECT * FROM usuarios WHERE email = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows === 1) {
-        $usuario = $result->fetch_assoc();
-        
-        // Verificar contraseña
-        if (password_verify($password, $usuario['password'])) {
-            // Login exitoso
-            $_SESSION['usuario_id'] = $usuario['id'];
-            $_SESSION['usuario_nombre'] = $usuario['nombre'];
-            $_SESSION['usuario_email'] = $usuario['email'];
-            $_SESSION['rol'] = $usuario['rol'];
-            
-            header("Location: index.php");
-            exit();
-        } else {
-            $error = 'Contraseña incorrecta';
-        }
+    // Verificar que los campos no estén vacíos
+    if (empty($email) || empty($password)) {
+        $error = 'Por favor complete todos los campos';
     } else {
-        $error = 'Usuario no encontrado';
+        $sql = "SELECT * FROM usuarios WHERE email = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 1) {
+            $usuario = $result->fetch_assoc();
+            
+            // Debug: Mostrar info (QUITAR EN PRODUCCIÓN)
+            // $debug_info = "Usuario encontrado. Hash en BD: " . substr($usuario['password'], 0, 20) . "...";
+            
+            // Verificar contraseña
+            if (password_verify($password, $usuario['password'])) {
+                // Login exitoso
+                $_SESSION['usuario_id'] = $usuario['id'];
+                $_SESSION['usuario_nombre'] = $usuario['nombre'];
+                $_SESSION['usuario_email'] = $usuario['email'];
+                $_SESSION['rol'] = $usuario['rol'];
+                
+                header("Location: index.php");
+                exit();
+            } else {
+                $error = 'Contraseña incorrecta';
+            }
+        } else {
+            $error = 'Usuario no encontrado';
+        }
     }
 }
 
@@ -154,6 +163,20 @@ $conn->close();
             margin-top: 1rem;
             font-size: 0.875rem;
         }
+        
+        .password-toggle {
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #858796;
+            z-index: 10;
+        }
+        
+        .password-wrapper {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -174,6 +197,12 @@ $conn->close();
                     </div>
                 <?php endif; ?>
                 
+                <?php if ($debug_info): ?>
+                    <div class="alert alert-info">
+                        <?php echo $debug_info; ?>
+                    </div>
+                <?php endif; ?>
+                
                 <form method="POST" action="">
                     <div class="mb-3">
                         <label class="form-label">Correo Electrónico</label>
@@ -181,17 +210,33 @@ $conn->close();
                             <span class="input-group-text">
                                 <i class="fas fa-envelope"></i>
                             </span>
-                            <input type="email" class="form-control" name="email" placeholder="usuario@ejemplo.com" required autofocus>
+                            <input type="email" 
+                                   class="form-control" 
+                                   name="email" 
+                                   placeholder="usuario@ejemplo.com" 
+                                   value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : 'admin@sistema.com'; ?>"
+                                   required 
+                                   autofocus>
                         </div>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Contraseña</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-lock"></i>
+                        <div class="password-wrapper">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       name="password" 
+                                       id="password"
+                                       placeholder="••••••••" 
+                                       required>
+                            </div>
+                            <span class="password-toggle" onclick="togglePassword()">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
                             </span>
-                            <input type="password" class="form-control" name="password" placeholder="••••••••" required>
                         </div>
                     </div>
                     
@@ -207,8 +252,15 @@ $conn->close();
                 
                 <div class="login-info mt-4">
                     <strong><i class="fas fa-info-circle"></i> Credenciales de prueba:</strong><br>
-                    <strong>Email:</strong> admin@sistema.com<br>
-                    <strong>Contraseña:</strong> admin123
+                    <div class="mt-2">
+                        <strong>Email:</strong> admin@sistema.com<br>
+                        <strong>Contraseña:</strong> admin123
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-primary" onclick="autoFill()">
+                            <i class="fas fa-magic"></i> Autocompletar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -219,5 +271,26 @@ $conn->close();
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+        
+        function autoFill() {
+            document.querySelector('input[name="email"]').value = 'admin@sistema.com';
+            document.querySelector('input[name="password"]').value = 'admin123';
+        }
+    </script>
 </body>
 </html>
