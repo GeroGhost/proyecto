@@ -6,47 +6,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
     if ($_POST['accion'] === 'crear_venta') {
         $cliente_id = intval($_POST['cliente_id']);
         $metodo_pago = limpiar_entrada($_POST['metodo_pago']);
-        $productos = json_decode($_POST['productos'], true);
+        $productos_json = $_POST['productos'];
         $total = floatval($_POST['total']);
         
-        // Iniciar transacción
-        $conn->begin_transaction();
-        
-        try {
-            // Insertar venta
-            $sql_venta = "INSERT INTO ventas (cliente_id, usuario_id, total, metodo_pago) VALUES (?, 1, ?, ?)";
-            $stmt_venta = $conn->prepare($sql_venta);
-            $stmt_venta->bind_param("ids", $cliente_id, $total, $metodo_pago);
-            $stmt_venta->execute();
-            $venta_id = $conn->insert_id;
-            
-            // Insertar detalles y actualizar stock
-            foreach ($productos as $prod) {
-                $producto_id = intval($prod['id']);
-                $cantidad = intval($prod['cantidad']);
-                $precio = floatval($prod['precio']);
-                $subtotal = $cantidad * $precio;
-                
-                // Insertar detalle
-                $sql_detalle = "INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
-                $stmt_detalle = $conn->prepare($sql_detalle);
-                $stmt_detalle->bind_param("iiidd", $venta_id, $producto_id, $cantidad, $precio, $subtotal);
-                $stmt_detalle->execute();
-                
-                // Actualizar stock
-                $sql_stock = "UPDATE productos SET stock = stock - ? WHERE id = ?";
-                $stmt_stock = $conn->prepare($sql_stock);
-                $stmt_stock->bind_param("ii", $cantidad, $producto_id);
-                $stmt_stock->execute();
-            }
-            
-            $conn->commit();
-            $mensaje = "Venta #" . $venta_id . " registrada exitosamente";
-            $tipo_mensaje = "success";
-        } catch (Exception $e) {
-            $conn->rollback();
-            $mensaje = "Error al registrar venta: " . $e->getMessage();
+        // ⭐ VALIDACIÓN: Verificar que productos_json no esté vacío
+        if (empty($productos_json)) {
+            $mensaje = "Error: No hay productos en el carrito";
             $tipo_mensaje = "danger";
+        } else {
+            $productos = json_decode($productos_json, true);
+            
+            // ⭐ VALIDACIÓN: Verificar que se decodificó correctamente
+            if ($productos === null || !is_array($productos) || count($productos) === 0) {
+                $mensaje = "Error: No se pudieron procesar los productos del carrito";
+                $tipo_mensaje = "danger";
+            } else {
+                // Iniciar transacción
+                $conn->begin_transaction();
+                
+                try {
+                    // Insertar venta
+                    $sql_venta = "INSERT INTO ventas (cliente_id, usuario_id, total, metodo_pago) VALUES (?, 1, ?, ?)";
+                    $stmt_venta = $conn->prepare($sql_venta);
+                    $stmt_venta->bind_param("ids", $cliente_id, $total, $metodo_pago);
+                    $stmt_venta->execute();
+                    $venta_id = $conn->insert_id;
+                    
+                    // Insertar detalles y actualizar stock
+                    foreach ($productos as $prod) {
+                        $producto_id = intval($prod['id']);
+                        $cantidad = intval($prod['cantidad']);
+                        $precio = floatval($prod['precio']);
+                        $subtotal = $cantidad * $precio;
+                        
+                        // Insertar detalle
+                        $sql_detalle = "INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
+                        $stmt_detalle = $conn->prepare($sql_detalle);
+                        $stmt_detalle->bind_param("iiidd", $venta_id, $producto_id, $cantidad, $precio, $subtotal);
+                        $stmt_detalle->execute();
+                        
+                        // Actualizar stock
+                        $sql_stock = "UPDATE productos SET stock = stock - ? WHERE id = ?";
+                        $stmt_stock = $conn->prepare($sql_stock);
+                        $stmt_stock->bind_param("ii", $cantidad, $producto_id);
+                        $stmt_stock->execute();
+                    }
+                    
+                    $conn->commit();
+                    $mensaje = "✅ Venta #" . $venta_id . " registrada exitosamente";
+                    $tipo_mensaje = "success";
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    $mensaje = "Error al registrar venta: " . $e->getMessage();
+                    $tipo_mensaje = "danger";
+                }
+            }
         }
     }
 }
@@ -186,11 +200,24 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
         .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
         .badge { padding: 0.5em 0.75em; }
         #carrito-productos { max-height: 300px; overflow-y: auto; }
-        .producto-item { border-bottom: 1px solid #e3e6f0; padding: 10px 0; }
+        .producto-item { 
+            border-bottom: 1px solid #e3e6f0; 
+            padding: 10px 0; 
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         .total-venta {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: bold;
             color: var(--success);
+            animation: pulse 0.5s ease;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         .filtros-card {
             background-color: #f8f9fc;
@@ -205,11 +232,20 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             border-radius: 0.35rem;
             border-left: 3px solid var(--primary);
         }
+        .empty-cart {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+        .empty-cart i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
     <div id="wrapper">
-        <!-- Sidebar (mismo código anterior) -->
+        <!-- Sidebar -->
         <ul class="navbar-nav" id="sidebar-wrapper">
             <a class="sidebar-brand" href="index.php">
                 <div class="sidebar-brand-icon"><i class="fas fa-shopping-cart"></i></div>
@@ -454,7 +490,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
         </div>
     </div>
     
-    <!-- Modal Nueva Venta (mismo código anterior) -->
+    <!-- Modal Nueva Venta -->
     <div class="modal fade" id="modalVenta" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -470,30 +506,48 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                         
                         <div class="row">
                             <div class="col-md-8">
-                                <h6 class="mb-3">Seleccionar Productos</h6>
+                                <h6 class="mb-3"><i class="fas fa-box"></i> Seleccionar Productos</h6>
                                 <div class="mb-3">
                                     <select class="form-select" id="producto_select">
                                         <option value="">Seleccionar producto...</option>
                                         <?php 
                                         while($prod = $result_productos->fetch_assoc()): 
+                                            // Crear array limpio solo con datos necesarios
+                                            $producto_datos = [
+                                                'id' => $prod['id'],
+                                                'nombre' => $prod['nombre'],
+                                                'precio' => $prod['precio'],
+                                                'stock' => $prod['stock']
+                                            ];
                                         ?>
-                                            <option value='<?php echo json_encode($prod); ?>'>
+                                            <option value='<?php echo htmlspecialchars(json_encode($producto_datos), ENT_QUOTES, 'UTF-8'); ?>'>
                                                 <?php echo $prod['nombre'] . ' - ' . formatear_precio($prod['precio']) . ' (Stock: ' . $prod['stock'] . ')'; ?>
                                             </option>
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
                                 
+                                <!-- 🧪 BOTÓN DE PRUEBA TEMPORAL -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="probarAgregarProducto()">
+                                        <i class="fas fa-flask"></i> Agregar Producto de Prueba
+                                    </button>
+                                </div>
+                                
                                 <div id="carrito-productos">
-                                    <p class="text-muted">No hay productos agregados</p>
+                                    <div class="empty-cart">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        <p>No hay productos agregados al carrito</p>
+                                        <small class="text-muted">Selecciona productos del menú desplegable</small>
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="col-md-4">
-                                <h6 class="mb-3">Información de Venta</h6>
+                                <h6 class="mb-3"><i class="fas fa-info-circle"></i> Información de Venta</h6>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Cliente</label>
+                                    <label class="form-label">Cliente *</label>
                                     <select class="form-select" name="cliente_id" required>
                                         <option value="">Seleccionar...</option>
                                         <?php 
@@ -508,7 +562,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Método de Pago</label>
+                                    <label class="form-label">Método de Pago *</label>
                                     <select class="form-select" name="metodo_pago" required>
                                         <option value="efectivo">💵 Efectivo</option>
                                         <option value="tarjeta">💳 Tarjeta</option>
@@ -518,16 +572,21 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                 
                                 <hr>
                                 
-                                <div class="text-center">
-                                    <h6>Total a Pagar</h6>
-                                    <div class="total-venta" id="total_display">$0.00</div>
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-muted mb-2">TOTAL A PAGAR</h6>
+                                        <div class="total-venta" id="total_display">$0.00</div>
+                                        <small class="text-muted" id="items_count">0 productos</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success" id="btnGuardarVenta">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" id="btnGuardarVenta" disabled>
                             <i class="fas fa-check"></i> Procesar Venta
                         </button>
                     </div>
@@ -538,71 +597,139 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        let carrito = [];
+        // ⭐ Variables y funciones GLOBALES
+        var carrito = [];
         
-        document.getElementById('producto_select').addEventListener('change', function() {
+        // ⭐ FUNCIÓN DE PRUEBA (GLOBAL)
+        function probarAgregarProducto() {
+            console.log('=== PRUEBA: Agregando producto de prueba ===');
+            const productoPrueba = {
+                id: 999,
+                nombre: 'Producto de Prueba',
+                precio: 100.00,
+                stock: 10
+            };
+            agregarAlCarrito(productoPrueba);
+            alert('Producto de prueba agregado. Revisa el carrito!');
+        }
+        
+        // ⭐ Agregar producto al seleccionar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, inicializando...');
+            
+            const productoSelect = document.getElementById('producto_select');
+            if (!productoSelect) {
+                console.error('❌ No se encontró el select de productos');
+                return;
+            }
+            
+            console.log('✅ Select de productos encontrado');
+            console.log('Opciones disponibles:', productoSelect.options.length);
+            
+            productoSelect.addEventListener('change', function() {
             if (this.value) {
-                const producto = JSON.parse(this.value);
-                agregarAlCarrito(producto);
-                this.value = '';
+                try {
+                    const producto = JSON.parse(this.value);
+                    console.log('Producto seleccionado:', producto);
+                    agregarAlCarrito(producto);
+                    this.value = '';
+                } catch (error) {
+                    console.error('Error al parsear producto:', error);
+                    alert('Error al agregar producto');
+                }
             }
         });
         
+        // ⭐ Función para agregar al carrito
         function agregarAlCarrito(producto) {
-            const existe = carrito.find(p => p.id === producto.id);
+            console.log('Agregando al carrito:', producto);
+            
+            // Convertir id a número
+            const productoId = parseInt(producto.id);
+            const existe = carrito.find(p => p.id === productoId);
             
             if (existe) {
-                if (existe.cantidad < producto.stock) {
+                console.log('Producto ya existe, aumentando cantidad');
+                if (existe.cantidad < parseInt(producto.stock)) {
                     existe.cantidad++;
                 } else {
-                    alert('⚠️ Stock insuficiente');
+                    alert('⚠️ Stock insuficiente. Disponible: ' + producto.stock);
                     return;
                 }
             } else {
-                carrito.push({
-                    id: producto.id,
+                console.log('Producto nuevo, agregando al carrito');
+                const nuevoProducto = {
+                    id: productoId,
                     nombre: producto.nombre,
                     precio: parseFloat(producto.precio),
                     cantidad: 1,
                     stock: parseInt(producto.stock)
-                });
+                };
+                carrito.push(nuevoProducto);
+                console.log('Producto agregado:', nuevoProducto);
             }
             
+            console.log('Carrito actual:', carrito);
             actualizarCarrito();
         }
         
+        // ⭐ Función para actualizar el carrito
         function actualizarCarrito() {
+            console.log('=== ACTUALIZANDO CARRITO ===');
+            console.log('Cantidad de productos en carrito:', carrito.length);
+            console.log('Contenido del carrito:', carrito);
+            
             const container = document.getElementById('carrito-productos');
             
-            if (carrito.length === 0) {
-                container.innerHTML = '<p class="text-muted">No hay productos agregados</p>';
-                document.getElementById('total_display').innerText = '$0.00';
-                document.getElementById('btnGuardarVenta').disabled = true;
+            if (!container) {
+                console.error('ERROR: No se encontró el contenedor del carrito');
                 return;
             }
             
+            if (carrito.length === 0) {
+                console.log('Carrito vacío, mostrando mensaje');
+                container.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>No hay productos agregados al carrito</p>
+                        <small class="text-muted">Selecciona productos del menú desplegable</small>
+                    </div>
+                `;
+                document.getElementById('total_display').innerText = '$0.00';
+                document.getElementById('items_count').innerText = '0 productos';
+                document.getElementById('btnGuardarVenta').disabled = true;
+                document.getElementById('productos_json').value = '';
+                document.getElementById('total_venta').value = '0';
+                return;
+            }
+            
+            console.log('Generando HTML del carrito...');
             let html = '';
             let total = 0;
             
             carrito.forEach((prod, index) => {
+                console.log(`Procesando producto ${index}:`, prod);
                 const subtotal = prod.precio * prod.cantidad;
                 total += subtotal;
                 
                 html += `
                     <div class="producto-item">
                         <div class="d-flex justify-content-between align-items-center">
-                            <div>
+                            <div class="flex-grow-1">
                                 <strong>${prod.nombre}</strong><br>
-                                <small class="text-muted">${prod.precio.toFixed(2)} x ${prod.cantidad} = <span class="text-success fw-bold">${subtotal.toFixed(2)}</span></small>
+                                <small class="text-muted">
+                                    ${formatearPrecio(prod.precio)} × ${prod.cantidad} = 
+                                    <span class="text-success fw-bold">${formatearPrecio(subtotal)}</span>
+                                </small>
                             </div>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, -1)" title="Disminuir">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="cambiarCantidad(${index}, -1)" title="Disminuir">
                                     <i class="fas fa-minus"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled style="min-width: 40px;">
-                                    ${prod.cantidad}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled style="min-width: 50px;">
+                                    <strong>${prod.cantidad}</strong>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cambiarCantidad(${index}, 1)" title="Aumentar">
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="cambiarCantidad(${index}, 1)" title="Aumentar" ${prod.cantidad >= prod.stock ? 'disabled' : ''}>
                                     <i class="fas fa-plus"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})" title="Eliminar">
@@ -614,13 +741,30 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                 `;
             });
             
+            console.log('Insertando HTML en el contenedor');
             container.innerHTML = html;
-            document.getElementById('total_display').innerText = ' + total.toFixed(2);
-            document.getElementById('total_venta').value = total.toFixed(2);
-            document.getElementById('productos_json').value = JSON.stringify(carrito);
-            document.getElementById('btnGuardarVenta').disabled = false;
+            
+            console.log('Total calculado:', total);
+            
+            // Actualizar total con animación
+            const totalDisplay = document.getElementById('total_display');
+            const itemsCount = document.getElementById('items_count');
+            const totalVenta = document.getElementById('total_venta');
+            const productosJson = document.getElementById('productos_json');
+            const btnGuardar = document.getElementById('btnGuardarVenta');
+            
+            if (totalDisplay) totalDisplay.innerText = formatearPrecio(total);
+            if (itemsCount) itemsCount.innerText = carrito.length + ' producto' + (carrito.length !== 1 ? 's' : '');
+            if (totalVenta) totalVenta.value = total.toFixed(2);
+            if (productosJson) productosJson.value = JSON.stringify(carrito);
+            if (btnGuardar) btnGuardar.disabled = false;
+            
+            console.log('Carrito actualizado exitosamente');
+            console.log('JSON productos:', JSON.stringify(carrito));
+            console.log('=== FIN ACTUALIZACIÓN ===');
         }
         
+        // ⭐ Cambiar cantidad
         function cambiarCantidad(index, cambio) {
             const producto = carrito[index];
             const nuevaCantidad = producto.cantidad + cambio;
@@ -639,6 +783,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             actualizarCarrito();
         }
         
+        // ⭐ Eliminar del carrito
         function eliminarDelCarrito(index) {
             if (confirm('¿Eliminar este producto del carrito?')) {
                 carrito.splice(index, 1);
@@ -646,28 +791,90 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             }
         }
         
+        // ⭐ Función auxiliar para formatear precio
+        function formatearPrecio(precio) {
+            return '
+                 + parseFloat(precio).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '                carrito.push({
+                    id: parseInt(producto.id),,');
+        }
+        
+        // ⭐ Ver detalle de venta
         function verDetalle(id) {
             window.location.href = 'detalle_venta.php?id=' + id;
         }
         
+        // ⭐ Imprimir ticket
         function imprimirTicket(id) {
             window.open('detalle_venta.php?id=' + id, '_blank');
         }
         
+        // ⭐ Resetear modal al cerrar
         document.getElementById('modalVenta').addEventListener('hidden.bs.modal', function () {
             carrito = [];
             actualizarCarrito();
             document.getElementById('formVenta').reset();
+            console.log('Modal cerrado, carrito reseteado');
         });
         
-        // Validar formulario antes de enviar
+        // ⭐ Validar formulario antes de enviar
         document.getElementById('formVenta').addEventListener('submit', function(e) {
             if (carrito.length === 0) {
                 e.preventDefault();
-                alert('⚠️ Debe agregar al menos un producto');
+                alert('⚠️ Debe agregar al menos un producto al carrito');
                 return false;
             }
+            
+            const clienteId = document.querySelector('select[name="cliente_id"]').value;
+            if (!clienteId) {
+                e.preventDefault();
+                alert('⚠️ Debe seleccionar un cliente');
+                return false;
+            }
+            
+            const metodoPago = document.querySelector('select[name="metodo_pago"]').value;
+            if (!metodoPago) {
+                e.preventDefault();
+                alert('⚠️ Debe seleccionar un método de pago');
+                return false;
+            }
+            
+            console.log('Enviando venta:', {
+                carrito: carrito,
+                total: document.getElementById('total_venta').value,
+                productos_json: document.getElementById('productos_json').value
+            });
+            
+            // Mostrar loading
+            const btn = document.getElementById('btnGuardarVenta');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
         });
+        
+        // ⭐ Log inicial
+        console.log('Script de ventas cargado correctamente');
+        console.log('Carrito inicial:', carrito);
+        
+        // 🧪 FUNCIÓN DE PRUEBA TEMPORAL
+        function probarAgregarProducto() {
+            console.log('=== PRUEBA: Agregando producto de prueba ===');
+            const productoPrueba = {
+                id: 999,
+                nombre: 'Producto de Prueba',
+                precio: 100.00,
+                stock: 10
+            };
+            agregarAlCarrito(productoPrueba);
+            alert('Producto de prueba agregado. Revisa la consola (F12)');
+        }
+        
+        // Verificar que el select existe
+        const selectProducto = document.getElementById('producto_select');
+        if (selectProducto) {
+            console.log('✅ Select de productos encontrado');
+            console.log('Número de opciones:', selectProducto.options.length);
+        } else {
+            console.error('❌ No se encontró el select de productos');
+        }
     </script>
 </body>
 </html>
