@@ -8,7 +8,7 @@ $hay_busqueda = !empty($busqueda);
 
 if ($hay_busqueda) {
     // Buscar en múltiples tablas
-    
+
     // 1. Buscar productos
     $sql_productos_busqueda = "SELECT 'producto' as tipo, id, nombre as titulo, precio, stock, 
                                 CONCAT('Stock: ', stock, ' | Precio: ', precio) as detalle
@@ -20,10 +20,10 @@ if ($hay_busqueda) {
     $stmt->bind_param("ss", $busqueda_param, $busqueda_param);
     $stmt->execute();
     $result = $stmt->get_result();
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $resultados_busqueda[] = $row;
     }
-    
+
     // 2. Buscar clientes
     $sql_clientes_busqueda = "SELECT 'cliente' as tipo, id, CONCAT(nombre, ' ', apellido) as titulo, 
                                CONCAT('DNI: ', dni, ' | Tel: ', telefono) as detalle, 0 as precio, 0 as stock
@@ -34,10 +34,10 @@ if ($hay_busqueda) {
     $stmt->bind_param("ssss", $busqueda_param, $busqueda_param, $busqueda_param, $busqueda_param);
     $stmt->execute();
     $result = $stmt->get_result();
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $resultados_busqueda[] = $row;
     }
-    
+
     // 3. Buscar ventas
     $sql_ventas_busqueda = "SELECT 'venta' as tipo, v.id, 
                             CONCAT('Venta #', LPAD(v.id, 6, '0')) as titulo,
@@ -52,10 +52,10 @@ if ($hay_busqueda) {
     $stmt->bind_param("sss", $busqueda_param, $busqueda_param, $busqueda_param);
     $stmt->execute();
     $result = $stmt->get_result();
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $resultados_busqueda[] = $row;
     }
-    
+
     // 4. Buscar facturas
     $sql_facturas_busqueda = "SELECT 'factura' as tipo, f.id, 
                               CONCAT('Factura ', f.numero_factura) as titulo,
@@ -70,7 +70,7 @@ if ($hay_busqueda) {
     $stmt->bind_param("sss", $busqueda_param, $busqueda_param, $busqueda_param);
     $stmt->execute();
     $result = $stmt->get_result();
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $resultados_busqueda[] = $row;
     }
 }
@@ -106,7 +106,7 @@ $sql_grafico_ventas = "SELECT DATE_FORMAT(fecha_venta, '%Y-%m') as mes, SUM(tota
                        ORDER BY mes ASC LIMIT 12";
 $result_grafico = $conn->query($sql_grafico_ventas);
 $datos_grafico = [];
-while($row = $result_grafico->fetch_assoc()) {
+while ($row = $result_grafico->fetch_assoc()) {
     $datos_grafico[] = $row;
 }
 
@@ -121,12 +121,13 @@ $sql_categorias = "SELECT c.nombre, SUM(dv.subtotal) as total
                    LIMIT 5";
 $result_categorias = $conn->query($sql_categorias);
 $datos_categorias = [];
-while($row = $result_categorias->fetch_assoc()) {
+while ($row = $result_categorias->fetch_assoc()) {
     $datos_categorias[] = $row;
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -142,16 +143,22 @@ while($row = $result_categorias->fetch_assoc()) {
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -164,51 +171,84 @@ while($row = $result_categorias->fetch_assoc()) {
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
-        .border-left-primary { border-left: 0.25rem solid var(--primary) !important; }
-        .border-left-success { border-left: 0.25rem solid var(--success) !important; }
-        .border-left-info { border-left: 0.25rem solid var(--info) !important; }
-        .border-left-warning { border-left: 0.25rem solid var(--warning) !important; }
+
+        .border-left-primary {
+            border-left: 0.25rem solid var(--primary) !important;
+        }
+
+        .border-left-success {
+            border-left: 0.25rem solid var(--success) !important;
+        }
+
+        .border-left-info {
+            border-left: 0.25rem solid var(--info) !important;
+        }
+
+        .border-left-warning {
+            border-left: 0.25rem solid var(--warning) !important;
+        }
+
         .text-xs {
             font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
         }
-        .h5 { font-size: 1.25rem; font-weight: 700; }
+
+        .h5 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
         .chart-container {
             position: relative;
             height: 300px;
         }
-        
+
         /* 🔍 ESTILOS PARA LA BÚSQUEDA */
         .search-container {
             position: relative;
             width: 100%;
             max-width: 500px;
         }
+
         .search-results {
             position: absolute;
             top: 100%;
@@ -216,16 +256,18 @@ while($row = $result_categorias->fetch_assoc()) {
             right: 0;
             background: white;
             border-radius: 0.35rem;
-            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
             max-height: 400px;
             overflow-y: auto;
             z-index: 1000;
             margin-top: 0.5rem;
             display: none;
         }
+
         .search-results.show {
             display: block;
         }
+
         .search-result-item {
             padding: 0.75rem 1rem;
             border-bottom: 1px solid #e3e6f0;
@@ -235,12 +277,15 @@ while($row = $result_categorias->fetch_assoc()) {
             align-items: center;
             gap: 1rem;
         }
+
         .search-result-item:hover {
             background-color: #f8f9fc;
         }
+
         .search-result-item:last-child {
             border-bottom: none;
         }
+
         .search-icon {
             width: 40px;
             height: 40px;
@@ -250,30 +295,52 @@ while($row = $result_categorias->fetch_assoc()) {
             justify-content: center;
             font-size: 1.2rem;
         }
-        .search-icon.producto { background-color: #e7f3ff; color: var(--info); }
-        .search-icon.cliente { background-color: #e8f5e9; color: var(--success); }
-        .search-icon.venta { background-color: #fff3e0; color: var(--warning); }
-        .search-icon.factura { background-color: #f3e5f5; color: #9c27b0; }
+
+        .search-icon.producto {
+            background-color: #e7f3ff;
+            color: var(--info);
+        }
+
+        .search-icon.cliente {
+            background-color: #e8f5e9;
+            color: var(--success);
+        }
+
+        .search-icon.venta {
+            background-color: #fff3e0;
+            color: var(--warning);
+        }
+
+        .search-icon.factura {
+            background-color: #f3e5f5;
+            color: #9c27b0;
+        }
+
         .search-result-content {
             flex: 1;
         }
+
         .search-result-title {
             font-weight: 600;
             color: #333;
             margin-bottom: 0.25rem;
         }
+
         .search-result-detail {
             font-size: 0.875rem;
             color: #666;
         }
+
         .no-results {
             padding: 2rem;
             text-align: center;
             color: #999;
         }
+
         .search-input-wrapper {
             position: relative;
         }
+
         .search-clear {
             position: absolute;
             right: 10px;
@@ -287,11 +354,13 @@ while($row = $result_categorias->fetch_assoc()) {
             padding: 0.25rem 0.5rem;
             display: none;
         }
+
         .search-clear.show {
             display: block;
         }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -358,7 +427,7 @@ while($row = $result_categorias->fetch_assoc()) {
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -366,24 +435,24 @@ while($row = $result_categorias->fetch_assoc()) {
                 <div class="search-container">
                     <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100" method="GET" id="searchForm">
                         <div class="input-group search-input-wrapper">
-                            <input type="text" 
-                                   class="form-control bg-light border-0 small" 
-                                   placeholder="Buscar productos, clientes, ventas..." 
-                                   name="buscar" 
-                                   id="searchInput"
-                                   value="<?php echo htmlspecialchars($busqueda); ?>"
-                                   style="border-radius: 10rem; padding-right: 40px;">
+                            <input type="text"
+                                class="form-control bg-light border-0 small"
+                                placeholder="Buscar productos, clientes, ventas..."
+                                name="buscar"
+                                id="searchInput"
+                                value="<?php echo htmlspecialchars($busqueda); ?>"
+                                style="border-radius: 10rem; padding-right: 40px;">
                             <button type="button" class="search-clear <?php echo $hay_busqueda ? 'show' : ''; ?>" id="clearSearch">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </form>
-                    
+
                     <!-- Resultados de búsqueda -->
                     <div class="search-results <?php echo $hay_busqueda ? 'show' : ''; ?>" id="searchResults">
                         <?php if ($hay_busqueda): ?>
                             <?php if (count($resultados_busqueda) > 0): ?>
-                                <?php foreach($resultados_busqueda as $resultado): ?>
+                                <?php foreach ($resultados_busqueda as $resultado): ?>
                                     <?php
                                     $iconos = [
                                         'producto' => 'fa-box',
@@ -420,7 +489,7 @@ while($row = $result_categorias->fetch_assoc()) {
                         <?php endif; ?>
                     </div>
                 </div>
-                
+
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="#">
@@ -429,7 +498,7 @@ while($row = $result_categorias->fetch_assoc()) {
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
@@ -437,7 +506,7 @@ while($row = $result_categorias->fetch_assoc()) {
                         <i class="fas fa-download fa-sm text-white-50"></i> Generar Reporte
                     </a>
                 </div>
-                
+
                 <!-- Cards de Métricas -->
                 <div class="row">
                     <div class="col-xl-3 col-md-6 mb-4">
@@ -457,7 +526,7 @@ while($row = $result_categorias->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-success shadow h-100 py-2">
                             <div class="card-body">
@@ -475,7 +544,7 @@ while($row = $result_categorias->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-info shadow h-100 py-2">
                             <div class="card-body">
@@ -491,7 +560,7 @@ while($row = $result_categorias->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-warning shadow h-100 py-2">
                             <div class="card-body">
@@ -508,7 +577,7 @@ while($row = $result_categorias->fetch_assoc()) {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Gráficos -->
                 <div class="row">
                     <div class="col-xl-8 col-lg-7">
@@ -523,7 +592,7 @@ while($row = $result_categorias->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-4 col-lg-5">
                         <div class="card shadow mb-4">
                             <div class="card-header py-3">
@@ -534,12 +603,12 @@ while($row = $result_categorias->fetch_assoc()) {
                                     <canvas id="categoriasChart"></canvas>
                                 </div>
                                 <div class="mt-4 text-center small">
-                                    <?php 
+                                    <?php
                                     $colores = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
-                                    foreach($datos_categorias as $index => $cat): 
+                                    foreach ($datos_categorias as $index => $cat):
                                     ?>
                                         <span class="mr-2">
-                                            <i class="fas fa-circle" style="color: <?php echo $colores[$index % 5]; ?>;"></i> 
+                                            <i class="fas fa-circle" style="color: <?php echo $colores[$index % 5]; ?>;"></i>
                                             <?php echo $cat['nombre']; ?>
                                         </span>
                                     <?php endforeach; ?>
@@ -549,7 +618,7 @@ while($row = $result_categorias->fetch_assoc()) {
                     </div>
                 </div>
             </div>
-            
+
             <!-- Footer -->
             <footer class="bg-white py-4">
                 <div class="container my-auto">
@@ -560,7 +629,7 @@ while($row = $result_categorias->fetch_assoc()) {
             </footer>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         // 🔍 FUNCIONALIDAD DE BÚSQUEDA
@@ -568,7 +637,7 @@ while($row = $result_categorias->fetch_assoc()) {
         const searchResults = document.getElementById('searchResults');
         const clearSearch = document.getElementById('clearSearch');
         const searchForm = document.getElementById('searchForm');
-        
+
         // Mostrar/ocultar botón de limpiar
         searchInput.addEventListener('input', function() {
             if (this.value.length > 0) {
@@ -578,7 +647,7 @@ while($row = $result_categorias->fetch_assoc()) {
                 searchResults.classList.remove('show');
             }
         });
-        
+
         // Limpiar búsqueda
         clearSearch.addEventListener('click', function() {
             searchInput.value = '';
@@ -586,37 +655,37 @@ while($row = $result_categorias->fetch_assoc()) {
             searchResults.classList.remove('show');
             window.location.href = 'index.php';
         });
-        
+
         // Buscar al presionar Enter
         searchForm.addEventListener('submit', function(e) {
             if (searchInput.value.trim().length === 0) {
                 e.preventDefault();
             }
         });
-        
+
         // Cerrar resultados al hacer clic fuera
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.search-container')) {
                 searchResults.classList.remove('show');
             }
         });
-        
+
         // Mostrar resultados al hacer clic en el input si ya hay búsqueda
         searchInput.addEventListener('focus', function() {
             if (this.value.length > 0 && searchResults.children.length > 0) {
                 searchResults.classList.add('show');
             }
         });
-        
+
         // GRÁFICOS
         console.log('Inicializando gráficos...');
-        
+
         const datosVentas = <?php echo json_encode($datos_grafico); ?>;
         const datosCategorias = <?php echo json_encode($datos_categorias); ?>;
-        
+
         console.log('Datos de ventas:', datosVentas);
         console.log('Datos de categorías:', datosCategorias);
-        
+
         // Gráfico de Ventas
         if (datosVentas && datosVentas.length > 0) {
             const ctxVentas = document.getElementById('ventasChart');
@@ -639,11 +708,16 @@ while($row = $result_categorias->fetch_assoc()) {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
+                            legend: {
+                                display: false
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return '$' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                        return '$' + context.parsed.y.toLocaleString('es-AR', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        });
                                     }
                                 }
                             }
@@ -668,7 +742,7 @@ while($row = $result_categorias->fetch_assoc()) {
             console.warn('No hay datos de ventas para mostrar');
             document.getElementById('ventasChart').parentElement.innerHTML = '<p class="text-center text-muted p-5">No hay datos de ventas disponibles</p>';
         }
-        
+
         // Gráfico de Categorías
         if (datosCategorias && datosCategorias.length > 0) {
             const ctxCategorias = document.getElementById('categoriasChart');
@@ -689,7 +763,9 @@ while($row = $result_categorias->fetch_assoc()) {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
+                            legend: {
+                                display: false
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -697,7 +773,9 @@ while($row = $result_categorias->fetch_assoc()) {
                                         const value = context.parsed || 0;
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = ((value / total) * 100).toFixed(1);
-                                        return label + ': $' + value.toLocaleString('es-AR', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
+                                        return label + ': $' + value.toLocaleString('es-AR', {
+                                            minimumFractionDigits: 2
+                                        }) + ' (' + percentage + '%)';
                                     }
                                 }
                             }
@@ -714,4 +792,5 @@ while($row = $result_categorias->fetch_assoc()) {
         }
     </script>
 </body>
+
 </html>

@@ -5,7 +5,7 @@ require_once 'config.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['accion'])) {
         $accion = $_POST['accion'];
-        
+
         if ($accion === 'crear') {
             $nombre = limpiar_entrada($_POST['nombre']);
             $razon_social = limpiar_entrada($_POST['razon_social']);
@@ -18,12 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $codigo_postal = limpiar_entrada($_POST['codigo_postal']);
             $contacto_nombre = limpiar_entrada($_POST['contacto_nombre']);
             $contacto_telefono = limpiar_entrada($_POST['contacto_telefono']);
-            
+
             $sql = "INSERT INTO proveedores (nombre, razon_social, cuit, email, telefono, direccion, ciudad, provincia, codigo_postal, contacto_nombre, contacto_telefono) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("sssssssssss", $nombre, $razon_social, $cuit, $email, $telefono, $direccion, $ciudad, $provincia, $codigo_postal, $contacto_nombre, $contacto_telefono);
-            
+
             if ($stmt->execute()) {
                 $mensaje = "Proveedor creado exitosamente";
                 $tipo_mensaje = "success";
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tipo_mensaje = "danger";
             }
         }
-        
+
         if ($accion === 'editar') {
             $id = intval($_POST['id']);
             $nombre = limpiar_entrada($_POST['nombre']);
@@ -46,11 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $codigo_postal = limpiar_entrada($_POST['codigo_postal']);
             $contacto_nombre = limpiar_entrada($_POST['contacto_nombre']);
             $contacto_telefono = limpiar_entrada($_POST['contacto_telefono']);
-            
+
             $sql = "UPDATE proveedores SET nombre=?, razon_social=?, cuit=?, email=?, telefono=?, direccion=?, ciudad=?, provincia=?, codigo_postal=?, contacto_nombre=?, contacto_telefono=? WHERE id=?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("sssssssssssi", $nombre, $razon_social, $cuit, $email, $telefono, $direccion, $ciudad, $provincia, $codigo_postal, $contacto_nombre, $contacto_telefono, $id);
-            
+
             if ($stmt->execute()) {
                 $mensaje = "Proveedor actualizado exitosamente";
                 $tipo_mensaje = "success";
@@ -59,13 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tipo_mensaje = "danger";
             }
         }
-        
+
         if ($accion === 'eliminar') {
             $id = intval($_POST['id']);
             $sql = "UPDATE proveedores SET estado=0 WHERE id=?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $id);
-            
+
             if ($stmt->execute()) {
                 $mensaje = "Proveedor desactivado exitosamente";
                 $tipo_mensaje = "success";
@@ -83,6 +83,7 @@ $result_proveedores = $conn->query($sql_proveedores);
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,16 +98,22 @@ $result_proveedores = $conn->query($sql_proveedores);
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -119,35 +126,61 @@ $result_proveedores = $conn->query($sql_proveedores);
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
-        .table-responsive { max-height: 600px; overflow-y: auto; }
-        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
-        .badge { padding: 0.5em 0.75em; }
+
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            padding: 0.5em 0.75em;
+        }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -214,7 +247,7 @@ $result_proveedores = $conn->query($sql_proveedores);
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -226,7 +259,7 @@ $result_proveedores = $conn->query($sql_proveedores);
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <?php if (isset($mensaje)): ?>
                     <div class="alert alert-<?php echo $tipo_mensaje; ?> alert-dismissible fade show">
@@ -234,14 +267,14 @@ $result_proveedores = $conn->query($sql_proveedores);
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-                
+
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Gestión de Proveedores</h1>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProveedor">
                         <i class="fas fa-plus"></i> Nuevo Proveedor
                     </button>
                 </div>
-                
+
                 <div class="card">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold" style="color: var(--primary);">Lista de Proveedores</h6>
@@ -263,29 +296,29 @@ $result_proveedores = $conn->query($sql_proveedores);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($row = $result_proveedores->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo $row['id']; ?></td>
-                                        <td><?php echo $row['nombre']; ?></td>
-                                        <td><?php echo $row['cuit']; ?></td>
-                                        <td><?php echo $row['email']; ?></td>
-                                        <td><?php echo $row['telefono']; ?></td>
-                                        <td><?php echo $row['ciudad']; ?></td>
-                                        <td><?php echo $row['contacto_nombre']; ?></td>
-                                        <td>
-                                            <span class="badge <?php echo $row['estado'] ? 'bg-success' : 'bg-secondary'; ?>">
-                                                <?php echo $row['estado'] ? 'Activo' : 'Inactivo'; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-info btn-sm" onclick="editarProveedor(<?php echo htmlspecialchars(json_encode($row)); ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="eliminarProveedor(<?php echo $row['id']; ?>)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <?php while ($row = $result_proveedores->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?php echo $row['id']; ?></td>
+                                            <td><?php echo $row['nombre']; ?></td>
+                                            <td><?php echo $row['cuit']; ?></td>
+                                            <td><?php echo $row['email']; ?></td>
+                                            <td><?php echo $row['telefono']; ?></td>
+                                            <td><?php echo $row['ciudad']; ?></td>
+                                            <td><?php echo $row['contacto_nombre']; ?></td>
+                                            <td>
+                                                <span class="badge <?php echo $row['estado'] ? 'bg-success' : 'bg-secondary'; ?>">
+                                                    <?php echo $row['estado'] ? 'Activo' : 'Inactivo'; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-info btn-sm" onclick="editarProveedor(<?php echo htmlspecialchars(json_encode($row)); ?>)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" onclick="eliminarProveedor(<?php echo $row['id']; ?>)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -295,7 +328,7 @@ $result_proveedores = $conn->query($sql_proveedores);
             </div>
         </div>
     </div>
-    
+
     <!-- Modal Proveedor -->
     <div class="modal fade" id="modalProveedor" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -308,7 +341,7 @@ $result_proveedores = $conn->query($sql_proveedores);
                     <div class="modal-body">
                         <input type="hidden" name="accion" id="accion" value="crear">
                         <input type="hidden" name="id" id="proveedor_id">
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre Comercial</label>
@@ -319,7 +352,7 @@ $result_proveedores = $conn->query($sql_proveedores);
                                 <input type="text" class="form-control" name="razon_social" id="razon_social">
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">CUIT</label>
@@ -330,7 +363,7 @@ $result_proveedores = $conn->query($sql_proveedores);
                                 <input type="email" class="form-control" name="email" id="email">
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Teléfono</label>
@@ -341,7 +374,7 @@ $result_proveedores = $conn->query($sql_proveedores);
                                 <input type="text" class="form-control" name="direccion" id="direccion">
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Ciudad</label>
@@ -356,10 +389,10 @@ $result_proveedores = $conn->query($sql_proveedores);
                                 <input type="text" class="form-control" name="codigo_postal" id="codigo_postal">
                             </div>
                         </div>
-                        
+
                         <hr>
                         <h6>Datos de Contacto</h6>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre del Contacto</label>
@@ -379,7 +412,7 @@ $result_proveedores = $conn->query($sql_proveedores);
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         function editarProveedor(proveedor) {
@@ -397,10 +430,10 @@ $result_proveedores = $conn->query($sql_proveedores);
             document.getElementById('codigo_postal').value = proveedor.codigo_postal;
             document.getElementById('contacto_nombre').value = proveedor.contacto_nombre;
             document.getElementById('contacto_telefono').value = proveedor.contacto_telefono;
-            
+
             new bootstrap.Modal(document.getElementById('modalProveedor')).show();
         }
-        
+
         function eliminarProveedor(id) {
             if (confirm('¿Está seguro de desactivar este proveedor?')) {
                 const form = document.createElement('form');
@@ -413,12 +446,13 @@ $result_proveedores = $conn->query($sql_proveedores);
                 form.submit();
             }
         }
-        
-        document.getElementById('modalProveedor').addEventListener('hidden.bs.modal', function () {
+
+        document.getElementById('modalProveedor').addEventListener('hidden.bs.modal', function() {
             document.getElementById('formProveedor').reset();
             document.getElementById('modalTitle').innerText = 'Nuevo Proveedor';
             document.getElementById('accion').value = 'crear';
         });
     </script>
 </body>
+
 </html>

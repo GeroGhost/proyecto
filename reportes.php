@@ -23,7 +23,7 @@ $sql_ventas_mes = "SELECT DATE_FORMAT(fecha_venta, '%Y-%m') as mes,
                    ORDER BY mes DESC LIMIT 12";
 $result_ventas_mes = $conn->query($sql_ventas_mes);
 $ventas_mes = [];
-while($row = $result_ventas_mes->fetch_assoc()) {
+while ($row = $result_ventas_mes->fetch_assoc()) {
     $ventas_mes[] = $row;
 }
 $ventas_mes = array_reverse($ventas_mes);
@@ -50,7 +50,7 @@ $sql_ventas_categoria = "SELECT c.nombre, SUM(dv.subtotal) as total
                          ORDER BY total DESC";
 $result_ventas_categoria = $conn->query($sql_ventas_categoria);
 $ventas_categoria = [];
-while($row = $result_ventas_categoria->fetch_assoc()) {
+while ($row = $result_ventas_categoria->fetch_assoc()) {
     $ventas_categoria[] = $row;
 }
 
@@ -60,12 +60,13 @@ $sql_metodos_pago = "SELECT metodo_pago, COUNT(*) as cantidad, SUM(total) as mon
                      GROUP BY metodo_pago";
 $result_metodos_pago = $conn->query($sql_metodos_pago);
 $metodos_pago = [];
-while($row = $result_metodos_pago->fetch_assoc()) {
+while ($row = $result_metodos_pago->fetch_assoc()) {
     $metodos_pago[] = $row;
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,16 +82,22 @@ while($row = $result_metodos_pago->fetch_assoc()) {
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -103,51 +110,85 @@ while($row = $result_metodos_pago->fetch_assoc()) {
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
         .sidebar-heading {
-            color: rgba(255,255,255,.5);
+            color: rgba(255, 255, 255, .5);
             padding: 0 1rem;
             font-size: 0.65rem;
             text-transform: uppercase;
             margin-top: 0.5rem;
         }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
-        .border-left-primary { border-left: 0.25rem solid var(--primary) !important; }
-        .border-left-success { border-left: 0.25rem solid var(--success) !important; }
-        .border-left-info { border-left: 0.25rem solid var(--info) !important; }
-        .border-left-warning { border-left: 0.25rem solid var(--warning) !important; }
+
+        .border-left-primary {
+            border-left: 0.25rem solid var(--primary) !important;
+        }
+
+        .border-left-success {
+            border-left: 0.25rem solid var(--success) !important;
+        }
+
+        .border-left-info {
+            border-left: 0.25rem solid var(--info) !important;
+        }
+
+        .border-left-warning {
+            border-left: 0.25rem solid var(--warning) !important;
+        }
+
         .text-xs {
             font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
         }
-        .h5 { font-size: 1.25rem; font-weight: 700; }
+
+        .h5 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
         .chart-container {
             position: relative;
             height: 300px;
         }
+
         .metodo-pago-item {
             display: flex;
             align-items: center;
@@ -155,17 +196,28 @@ while($row = $result_metodos_pago->fetch_assoc()) {
             padding: 10px;
             border-bottom: 1px solid #e3e6f0;
         }
+
         .metodo-icon {
             font-size: 2rem;
             width: 50px;
             text-align: center;
         }
+
         @media print {
-            #sidebar-wrapper, .topbar, .no-print { display: none !important; }
-            #content-wrapper { margin: 0 !important; }
+
+            #sidebar-wrapper,
+            .topbar,
+            .no-print {
+                display: none !important;
+            }
+
+            #content-wrapper {
+                margin: 0 !important;
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -232,7 +284,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -244,7 +296,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Reportes y Estadísticas</h1>
@@ -259,7 +311,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Cards de Métricas -->
                 <div class="row">
                     <div class="col-xl-3 col-md-6 mb-4">
@@ -277,7 +329,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-success shadow h-100 py-2">
                             <div class="card-body">
@@ -293,7 +345,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-info shadow h-100 py-2">
                             <div class="card-body">
@@ -309,7 +361,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-warning shadow h-100 py-2">
                             <div class="card-body">
@@ -326,7 +378,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Gráficos -->
                 <div class="row">
                     <div class="col-xl-8">
@@ -348,7 +400,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-4">
                         <div class="card shadow mb-4">
                             <div class="card-header py-3">
@@ -369,7 +421,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-xl-6">
                         <div class="card shadow mb-4">
@@ -391,36 +443,36 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php 
+                                            <?php
                                             if ($result_productos_top->num_rows > 0):
                                                 $posicion = 1;
-                                                while($row = $result_productos_top->fetch_assoc()): 
+                                                while ($row = $result_productos_top->fetch_assoc()):
                                             ?>
-                                            <tr>
-                                                <td>
-                                                    <?php if($posicion <= 3): ?>
-                                                        <span class="badge bg-<?php echo $posicion == 1 ? 'warning' : ($posicion == 2 ? 'secondary' : 'info'); ?>">
-                                                            <?php echo $posicion; ?>
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <?php echo $posicion; ?>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?php echo $row['nombre']; ?></td>
-                                                <td><span class="badge bg-primary"><?php echo $row['vendido']; ?></span></td>
-                                                <td class="text-success fw-bold"><?php echo formatear_precio($row['ingresos']); ?></td>
-                                            </tr>
-                                            <?php 
-                                                $posicion++;
+                                                    <tr>
+                                                        <td>
+                                                            <?php if ($posicion <= 3): ?>
+                                                                <span class="badge bg-<?php echo $posicion == 1 ? 'warning' : ($posicion == 2 ? 'secondary' : 'info'); ?>">
+                                                                    <?php echo $posicion; ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <?php echo $posicion; ?>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td><?php echo $row['nombre']; ?></td>
+                                                        <td><span class="badge bg-primary"><?php echo $row['vendido']; ?></span></td>
+                                                        <td class="text-success fw-bold"><?php echo formatear_precio($row['ingresos']); ?></td>
+                                                    </tr>
+                                                <?php
+                                                    $posicion++;
                                                 endwhile;
                                             else:
-                                            ?>
-                                            <tr>
-                                                <td colspan="4" class="text-center text-muted py-4">
-                                                    <i class="fas fa-box-open fa-2x mb-2"></i><br>
-                                                    No hay datos disponibles
-                                                </td>
-                                            </tr>
+                                                ?>
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-4">
+                                                        <i class="fas fa-box-open fa-2x mb-2"></i><br>
+                                                        No hay datos disponibles
+                                                    </td>
+                                                </tr>
                                             <?php endif; ?>
                                         </tbody>
                                     </table>
@@ -428,7 +480,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-6">
                         <div class="card shadow mb-4">
                             <div class="card-header py-3">
@@ -440,27 +492,27 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                                         <canvas id="metodosPagoChart"></canvas>
                                     </div>
                                     <div class="mt-4">
-                                        <?php 
+                                        <?php
                                         $iconos = [
                                             'efectivo' => ['icon' => 'fa-money-bill-wave', 'color' => '#1cc88a'],
                                             'tarjeta' => ['icon' => 'fa-credit-card', 'color' => '#4e73df'],
                                             'transferencia' => ['icon' => 'fa-exchange-alt', 'color' => '#36b9cc']
                                         ];
-                                        foreach($metodos_pago as $metodo): 
+                                        foreach ($metodos_pago as $metodo):
                                             $info = $iconos[$metodo['metodo_pago']] ?? ['icon' => 'fa-wallet', 'color' => '#858796'];
                                         ?>
-                                        <div class="metodo-pago-item">
-                                            <div class="metodo-icon" style="color: <?php echo $info['color']; ?>">
-                                                <i class="fas <?php echo $info['icon']; ?>"></i>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="d-flex justify-content-between">
-                                                    <span class="text-capitalize fw-bold"><?php echo $metodo['metodo_pago']; ?></span>
-                                                    <span class="fw-bold" style="color: <?php echo $info['color']; ?>"><?php echo formatear_precio($metodo['monto']); ?></span>
+                                            <div class="metodo-pago-item">
+                                                <div class="metodo-icon" style="color: <?php echo $info['color']; ?>">
+                                                    <i class="fas <?php echo $info['icon']; ?>"></i>
                                                 </div>
-                                                <small class="text-muted"><?php echo $metodo['cantidad']; ?> transacciones</small>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="text-capitalize fw-bold"><?php echo $metodo['metodo_pago']; ?></span>
+                                                        <span class="fw-bold" style="color: <?php echo $info['color']; ?>"><?php echo formatear_precio($metodo['monto']); ?></span>
+                                                    </div>
+                                                    <small class="text-muted"><?php echo $metodo['cantidad']; ?> transacciones</small>
+                                                </div>
                                             </div>
-                                        </div>
                                         <?php endforeach; ?>
                                     </div>
                                 <?php else: ?>
@@ -476,19 +528,19 @@ while($row = $result_metodos_pago->fetch_assoc()) {
             </div>
         </div>
     </div>
-    
+
     <script>
         console.log('Inicializando reportes...');
-        
+
         // Datos desde PHP
         const datosVentas = <?php echo json_encode($ventas_mes); ?>;
         const datosCategorias = <?php echo json_encode($ventas_categoria); ?>;
         const datosMetodos = <?php echo json_encode($metodos_pago); ?>;
-        
+
         console.log('Datos ventas:', datosVentas);
         console.log('Datos categorías:', datosCategorias);
         console.log('Datos métodos:', datosMetodos);
-        
+
         // Gráfico de Ventas por Mes
         if (datosVentas && datosVentas.length > 0) {
             const ctxVentasMes = document.getElementById('ventasMesChart');
@@ -511,11 +563,15 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
+                            legend: {
+                                display: false
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return '$' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                                        return '$' + context.parsed.y.toLocaleString('es-AR', {
+                                            minimumFractionDigits: 2
+                                        });
                                     }
                                 }
                             }
@@ -535,7 +591,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                 console.log('✓ Gráfico de ventas por mes creado');
             }
         }
-        
+
         // Gráfico de Categorías
         if (datosCategorias && datosCategorias.length > 0) {
             const ctxCategorias = document.getElementById('categoriasChart');
@@ -556,7 +612,9 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { position: 'bottom' },
+                            legend: {
+                                position: 'bottom'
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -564,7 +622,9 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                                         const value = context.parsed || 0;
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = ((value / total) * 100).toFixed(1);
-                                        return label + ': $' + value.toLocaleString('es-AR', {minimumFractionDigits: 2}) + ' (' + percentage + '%)';
+                                        return label + ': $' + value.toLocaleString('es-AR', {
+                                            minimumFractionDigits: 2
+                                        }) + ' (' + percentage + '%)';
                                     }
                                 }
                             }
@@ -574,7 +634,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                 console.log('✓ Gráfico de categorías creado');
             }
         }
-        
+
         // Gráfico de Métodos de Pago
         if (datosMetodos && datosMetodos.length > 0) {
             const ctxMetodos = document.getElementById('metodosPagoChart');
@@ -584,7 +644,7 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                     'tarjeta': '#4e73df',
                     'transferencia': '#36b9cc'
                 };
-                
+
                 new Chart(ctxMetodos, {
                     type: 'bar',
                     data: {
@@ -599,12 +659,16 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { 
-                            legend: { display: false },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return '$' + context.parsed.y.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                                        return '$' + context.parsed.y.toLocaleString('es-AR', {
+                                            minimumFractionDigits: 2
+                                        });
                                     }
                                 }
                             }
@@ -624,8 +688,9 @@ while($row = $result_metodos_pago->fetch_assoc()) {
                 console.log('✓ Gráfico de métodos de pago creado');
             }
         }
-        
+
         console.log('✓ Todos los gráficos inicializados');
     </script>
 </body>
+
 </html>

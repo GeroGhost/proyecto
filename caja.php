@@ -12,12 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $referencia = limpiar_entrada($_POST['referencia']);
         $fecha_movimiento = limpiar_entrada($_POST['fecha_movimiento']);
         $observaciones = limpiar_entrada($_POST['observaciones']);
-        
+
         $sql = "INSERT INTO movimientos_caja (tipo, concepto, categoria, importe, metodo_pago, referencia, fecha_movimiento, observaciones, usuario_id) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("sssdssss", $tipo, $concepto, $categoria, $importe, $metodo_pago, $referencia, $fecha_movimiento, $observaciones);
-        
+
         if ($stmt->execute()) {
             $mensaje = "Movimiento registrado exitosamente";
             $tipo_mensaje = "success";
@@ -59,6 +59,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,16 +74,22 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -95,51 +102,92 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
         .sidebar-heading {
-            color: rgba(255,255,255,.5);
+            color: rgba(255, 255, 255, .5);
             padding: 0 1rem;
             font-size: 0.65rem;
             text-transform: uppercase;
             margin-top: 0.5rem;
         }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
-        .border-left-success { border-left: 0.25rem solid var(--success) !important; }
-        .border-left-danger { border-left: 0.25rem solid var(--danger) !important; }
-        .border-left-info { border-left: 0.25rem solid var(--info) !important; }
+
+        .border-left-success {
+            border-left: 0.25rem solid var(--success) !important;
+        }
+
+        .border-left-danger {
+            border-left: 0.25rem solid var(--danger) !important;
+        }
+
+        .border-left-info {
+            border-left: 0.25rem solid var(--info) !important;
+        }
+
         .text-xs {
             font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
         }
-        .h5 { font-size: 1.25rem; font-weight: 700; }
-        .table-responsive { max-height: 600px; overflow-y: auto; }
-        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
-        .badge { padding: 0.5em 0.75em; }
+
+        .h5 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            padding: 0.5em 0.75em;
+        }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -206,7 +254,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -218,7 +266,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <?php if (isset($mensaje)): ?>
                     <div class="alert alert-<?php echo $tipo_mensaje; ?> alert-dismissible fade show">
@@ -226,7 +274,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-                
+
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Control de Caja</h1>
                     <div>
@@ -238,7 +286,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Tarjetas de Resumen -->
                 <div class="row">
                     <div class="col-xl-3 col-md-6 mb-4">
@@ -258,7 +306,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-danger shadow h-100 py-2">
                             <div class="card-body">
@@ -276,7 +324,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-info shadow h-100 py-2">
                             <div class="card-body">
@@ -294,7 +342,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-left-success shadow h-100 py-2">
                             <div class="card-body">
@@ -313,7 +361,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Filtro de Fecha -->
                 <div class="card mb-4">
                     <div class="card-body">
@@ -331,7 +379,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                         </form>
                     </div>
                 </div>
-                
+
                 <!-- Tabla de Movimientos -->
                 <div class="card">
                     <div class="card-header py-3">
@@ -354,28 +402,28 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($row = $result_movimientos->fetch_assoc()): ?>
-                                    <tr>
-                                        <td>
-                                            <?php if($row['tipo'] === 'ingreso'): ?>
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-arrow-up"></i> Ingreso
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="badge bg-danger">
-                                                    <i class="fas fa-arrow-down"></i> Egreso
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo $row['concepto']; ?></td>
-                                        <td><span class="badge bg-secondary"><?php echo ucfirst(str_replace('_', ' ', $row['categoria'])); ?></span></td>
-                                        <td class="fw-bold <?php echo $row['tipo'] === 'ingreso' ? 'text-success' : 'text-danger'; ?>">
-                                            <?php echo formatear_precio($row['importe']); ?>
-                                        </td>
-                                        <td><?php echo ucfirst($row['metodo_pago']); ?></td>
-                                        <td><?php echo $row['referencia'] ?? '-'; ?></td>
-                                        <td><?php echo $row['observaciones'] ?? '-'; ?></td>
-                                    </tr>
+                                    <?php while ($row = $result_movimientos->fetch_assoc()): ?>
+                                        <tr>
+                                            <td>
+                                                <?php if ($row['tipo'] === 'ingreso'): ?>
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-arrow-up"></i> Ingreso
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-arrow-down"></i> Egreso
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo $row['concepto']; ?></td>
+                                            <td><span class="badge bg-secondary"><?php echo ucfirst(str_replace('_', ' ', $row['categoria'])); ?></span></td>
+                                            <td class="fw-bold <?php echo $row['tipo'] === 'ingreso' ? 'text-success' : 'text-danger'; ?>">
+                                                <?php echo formatear_precio($row['importe']); ?>
+                                            </td>
+                                            <td><?php echo ucfirst($row['metodo_pago']); ?></td>
+                                            <td><?php echo $row['referencia'] ?? '-'; ?></td>
+                                            <td><?php echo $row['observaciones'] ?? '-'; ?></td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -385,7 +433,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
             </div>
         </div>
     </div>
-    
+
     <!-- Modal Movimiento -->
     <div class="modal fade" id="modalMovimiento" tabindex="-1">
         <div class="modal-dialog">
@@ -398,12 +446,12 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                     <div class="modal-body">
                         <input type="hidden" name="accion" value="nuevo_movimiento">
                         <input type="hidden" name="tipo" id="tipo_movimiento">
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Concepto</label>
                             <input type="text" class="form-control" name="concepto" required>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Categoría</label>
                             <select class="form-select" name="categoria" required>
@@ -415,12 +463,12 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                                 <option value="otro">Otro</option>
                             </select>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Importe</label>
                             <input type="number" step="0.01" class="form-control" name="importe" required>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Método de Pago</label>
                             <select class="form-select" name="metodo_pago" required>
@@ -430,17 +478,17 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
                                 <option value="cheque">Cheque</option>
                             </select>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Número de Referencia</label>
                             <input type="text" class="form-control" name="referencia" placeholder="Opcional">
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Fecha</label>
                             <input type="date" class="form-control" name="fecha_movimiento" value="<?php echo date('Y-m-d'); ?>" required>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Observaciones</label>
                             <textarea class="form-control" name="observaciones" rows="2"></textarea>
@@ -454,7 +502,7 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         function setTipoMovimiento(tipo) {
@@ -463,4 +511,5 @@ $saldo_acumulado = $stmt_acum->get_result()->fetch_assoc()['saldo_acumulado'] ??
         }
     </script>
 </body>
+
 </html>

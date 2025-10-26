@@ -33,6 +33,7 @@ $detalles = $stmt_det->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,16 +48,22 @@ $detalles = $stmt_det->get_result();
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -69,61 +76,92 @@ $detalles = $stmt_det->get_result();
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
         .sidebar-heading {
-            color: rgba(255,255,255,.5);
+            color: rgba(255, 255, 255, .5);
             padding: 0 1rem;
             font-size: 0.65rem;
             text-transform: uppercase;
             margin-top: 0.5rem;
         }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
+
         .invoice-header {
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
             color: white;
             padding: 2rem;
             border-radius: 0.35rem 0.35rem 0 0;
         }
+
         .total-box {
             background-color: #f8f9fc;
             padding: 1.5rem;
             border-radius: 0.35rem;
             text-align: right;
         }
+
         .total-amount {
             font-size: 2rem;
             font-weight: bold;
             color: var(--success);
         }
+
         @media print {
-            #sidebar-wrapper, .topbar, .no-print { display: none !important; }
-            #content-wrapper { margin: 0 !important; }
-            .card { box-shadow: none !important; }
+
+            #sidebar-wrapper,
+            .topbar,
+            .no-print {
+                display: none !important;
+            }
+
+            #content-wrapper {
+                margin: 0 !important;
+            }
+
+            .card {
+                box-shadow: none !important;
+            }
         }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -190,7 +228,7 @@ $detalles = $stmt_det->get_result();
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -202,7 +240,7 @@ $detalles = $stmt_det->get_result();
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4 no-print">
                     <h1 class="h3 mb-0 text-gray-800">Detalle de Venta</h1>
@@ -215,7 +253,7 @@ $detalles = $stmt_det->get_result();
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="card">
                     <div class="invoice-header">
                         <div class="row">
@@ -233,7 +271,7 @@ $detalles = $stmt_det->get_result();
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card-body">
                         <!-- Información del Cliente -->
                         <div class="row mb-4">
@@ -262,7 +300,7 @@ $detalles = $stmt_det->get_result();
                                     </tr>
                                 </table>
                             </div>
-                            
+
                             <div class="col-md-6">
                                 <h5 class="text-primary"><i class="fas fa-info-circle"></i> Información de la Venta</h5>
                                 <table class="table table-sm">
@@ -270,14 +308,14 @@ $detalles = $stmt_det->get_result();
                                         <td><strong>Método de Pago:</strong></td>
                                         <td>
                                             <span class="badge bg-info">
-                                                <?php 
+                                                <?php
                                                 $iconos_pago = [
                                                     'efectivo' => 'fa-money-bill-wave',
                                                     'tarjeta' => 'fa-credit-card',
                                                     'transferencia' => 'fa-exchange-alt'
                                                 ];
                                                 echo '<i class="fas ' . ($iconos_pago[$venta['metodo_pago']] ?? 'fa-wallet') . '"></i> ';
-                                                echo ucfirst($venta['metodo_pago']); 
+                                                echo ucfirst($venta['metodo_pago']);
                                                 ?>
                                             </span>
                                         </td>
@@ -287,9 +325,13 @@ $detalles = $stmt_det->get_result();
                                         <td>
                                             <?php
                                             $badge_color = 'success';
-                                            switch($venta['estado']) {
-                                                case 'pendiente': $badge_color = 'warning'; break;
-                                                case 'cancelada': $badge_color = 'danger'; break;
+                                            switch ($venta['estado']) {
+                                                case 'pendiente':
+                                                    $badge_color = 'warning';
+                                                    break;
+                                                case 'cancelada':
+                                                    $badge_color = 'danger';
+                                                    break;
                                             }
                                             ?>
                                             <span class="badge bg-<?php echo $badge_color; ?>">
@@ -300,7 +342,7 @@ $detalles = $stmt_det->get_result();
                                 </table>
                             </div>
                         </div>
-                        
+
                         <!-- Detalle de Productos -->
                         <h5 class="text-primary mb-3"><i class="fas fa-box"></i> Productos</h5>
                         <div class="table-responsive">
@@ -314,26 +356,26 @@ $detalles = $stmt_det->get_result();
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php 
+                                    <?php
                                     $subtotal_total = 0;
-                                    while($detalle = $detalles->fetch_assoc()): 
+                                    while ($detalle = $detalles->fetch_assoc()):
                                         $subtotal_total += $detalle['subtotal'];
                                     ?>
-                                    <tr>
-                                        <td><?php echo $detalle['producto_nombre']; ?></td>
-                                        <td class="text-center">
-                                            <span class="badge bg-primary"><?php echo $detalle['cantidad']; ?></span>
-                                        </td>
-                                        <td class="text-end"><?php echo formatear_precio($detalle['precio_unitario']); ?></td>
-                                        <td class="text-end fw-bold text-success">
-                                            <?php echo formatear_precio($detalle['subtotal']); ?>
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td><?php echo $detalle['producto_nombre']; ?></td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary"><?php echo $detalle['cantidad']; ?></span>
+                                            </td>
+                                            <td class="text-end"><?php echo formatear_precio($detalle['precio_unitario']); ?></td>
+                                            <td class="text-end fw-bold text-success">
+                                                <?php echo formatear_precio($detalle['subtotal']); ?>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Total -->
                         <div class="row mt-4">
                             <div class="col-md-8"></div>
@@ -346,13 +388,13 @@ $detalles = $stmt_det->get_result();
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Notas adicionales -->
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle"></i>
-                                    <strong>Nota:</strong> Esta es una copia digital de la venta realizada. 
+                                    <strong>Nota:</strong> Esta es una copia digital de la venta realizada.
                                     Para cualquier consulta o reclamo, comunicarse con el área de ventas.
                                 </div>
                             </div>
@@ -362,7 +404,8 @@ $detalles = $stmt_det->get_result();
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

@@ -8,22 +8,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $metodo_pago = limpiar_entrada($_POST['metodo_pago']);
         $productos_json = $_POST['productos'];
         $total = floatval($_POST['total']);
-        
-        // ⭐ VALIDACIÓN: Verificar que productos_json no esté vacío
+
+        // VALIDACIÓN: Verificar que productos_json no esté vacío
         if (empty($productos_json)) {
             $mensaje = "Error: No hay productos en el carrito";
             $tipo_mensaje = "danger";
         } else {
             $productos = json_decode($productos_json, true);
-            
-            // ⭐ VALIDACIÓN: Verificar que se decodificó correctamente
+
+            // VALIDACIÓN: Verificar que se decodificó correctamente
             if ($productos === null || !is_array($productos) || count($productos) === 0) {
                 $mensaje = "Error: No se pudieron procesar los productos del carrito";
                 $tipo_mensaje = "danger";
             } else {
                 // Iniciar transacción
                 $conn->begin_transaction();
-                
+
                 try {
                     // Insertar venta
                     $sql_venta = "INSERT INTO ventas (cliente_id, usuario_id, total, metodo_pago) VALUES (?, 1, ?, ?)";
@@ -31,27 +31,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                     $stmt_venta->bind_param("ids", $cliente_id, $total, $metodo_pago);
                     $stmt_venta->execute();
                     $venta_id = $conn->insert_id;
-                    
+
                     // Insertar detalles y actualizar stock
                     foreach ($productos as $prod) {
                         $producto_id = intval($prod['id']);
                         $cantidad = intval($prod['cantidad']);
                         $precio = floatval($prod['precio']);
                         $subtotal = $cantidad * $precio;
-                        
+
                         // Insertar detalle
                         $sql_detalle = "INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, subtotal) VALUES (?, ?, ?, ?, ?)";
                         $stmt_detalle = $conn->prepare($sql_detalle);
                         $stmt_detalle->bind_param("iiidd", $venta_id, $producto_id, $cantidad, $precio, $subtotal);
                         $stmt_detalle->execute();
-                        
+
                         // Actualizar stock
                         $sql_stock = "UPDATE productos SET stock = stock - ? WHERE id = ?";
                         $stmt_stock = $conn->prepare($sql_stock);
                         $stmt_stock->bind_param("ii", $cantidad, $producto_id);
                         $stmt_stock->execute();
                     }
-                    
+
                     $conn->commit();
                     $mensaje = "✅ Venta #" . $venta_id . " registrada exitosamente";
                     $tipo_mensaje = "success";
@@ -129,6 +129,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -143,16 +144,22 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -165,60 +172,109 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
         .sidebar-heading {
-            color: rgba(255,255,255,.5);
+            color: rgba(255, 255, 255, .5);
             padding: 0 1rem;
             font-size: 0.65rem;
             text-transform: uppercase;
             margin-top: 0.5rem;
         }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
-        .table-responsive { max-height: 600px; overflow-y: auto; }
-        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
-        .badge { padding: 0.5em 0.75em; }
-        #carrito-productos { max-height: 300px; overflow-y: auto; }
-        .producto-item { 
-            border-bottom: 1px solid #e3e6f0; 
-            padding: 10px 0; 
+
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            padding: 0.5em 0.75em;
+        }
+
+        #carrito-productos {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .producto-item {
+            border-bottom: 1px solid #e3e6f0;
+            padding: 10px 0;
             animation: slideIn 0.3s ease;
         }
+
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
+
         .total-venta {
             font-size: 2rem;
             font-weight: bold;
             color: var(--success);
             animation: pulse 0.5s ease;
         }
+
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
         }
+
         .filtros-card {
             background-color: #f8f9fc;
             border: 1px solid #e3e6f0;
@@ -226,23 +282,27 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             padding: 1rem;
             margin-bottom: 1rem;
         }
+
         .stat-box {
             background: white;
             padding: 1rem;
             border-radius: 0.35rem;
             border-left: 3px solid var(--primary);
         }
+
         .empty-cart {
             text-align: center;
             padding: 2rem;
             color: #999;
         }
+
         .empty-cart i {
             font-size: 3rem;
             margin-bottom: 1rem;
         }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -309,7 +369,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -321,7 +381,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <?php if (isset($mensaje)): ?>
                     <div class="alert alert-<?php echo $tipo_mensaje; ?> alert-dismissible fade show">
@@ -329,14 +389,14 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-                
+
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Gestión de Ventas</h1>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalVenta">
                         <i class="fas fa-plus"></i> Nueva Venta
                     </button>
                 </div>
-                
+
                 <!-- Estadísticas rápidas -->
                 <div class="row mb-4">
                     <div class="col-md-6">
@@ -362,7 +422,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Filtros -->
                 <div class="filtros-card">
                     <form method="GET" class="row g-3">
@@ -374,7 +434,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                             <label class="form-label"><i class="fas fa-user"></i> Cliente</label>
                             <select class="form-select" name="cliente">
                                 <option value="">Todos</option>
-                                <?php while($cli = $result_clientes_filtro->fetch_assoc()): ?>
+                                <?php while ($cli = $result_clientes_filtro->fetch_assoc()): ?>
                                     <option value="<?php echo $cli['id']; ?>" <?php echo $filtro_cliente == $cli['id'] ? 'selected' : ''; ?>>
                                         <?php echo $cli['nombre'] . ' ' . $cli['apellido']; ?>
                                     </option>
@@ -411,7 +471,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                         </div>
                     </form>
                 </div>
-                
+
                 <div class="card">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold" style="color: var(--primary);">Historial de Ventas</h6>
@@ -431,55 +491,55 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php 
-                                    if($result_ventas->num_rows > 0):
-                                        while($row = $result_ventas->fetch_assoc()): 
+                                    <?php
+                                    if ($result_ventas->num_rows > 0):
+                                        while ($row = $result_ventas->fetch_assoc()):
                                     ?>
-                                    <tr>
-                                        <td><strong>#<?php echo str_pad($row['id'], 6, '0', STR_PAD_LEFT); ?></strong></td>
-                                        <td>
-                                            <i class="fas fa-user-circle text-primary"></i>
-                                            <?php echo $row['cliente_nombre'] . ' ' . $row['cliente_apellido']; ?>
-                                        </td>
-                                        <td class="text-success fw-bold"><?php echo formatear_precio($row['total']); ?></td>
-                                        <td>
-                                            <?php
-                                            $iconos = [
-                                                'efectivo' => 'fa-money-bill-wave',
-                                                'tarjeta' => 'fa-credit-card',
-                                                'transferencia' => 'fa-exchange-alt'
-                                            ];
-                                            ?>
-                                            <span class="badge bg-info">
-                                                <i class="fas <?php echo $iconos[$row['metodo_pago']] ?? 'fa-wallet'; ?>"></i>
-                                                <?php echo ucfirst($row['metodo_pago']); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-success">
-                                                <?php echo ucfirst($row['estado']); ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo formatear_fecha($row['fecha_venta']); ?></td>
-                                        <td>
-                                            <button class="btn btn-info btn-sm" onclick="verDetalle(<?php echo $row['id']; ?>)" title="Ver Detalle">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn btn-primary btn-sm" onclick="imprimirTicket(<?php echo $row['id']; ?>)" title="Imprimir">
-                                                <i class="fas fa-print"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php 
+                                            <tr>
+                                                <td><strong>#<?php echo str_pad($row['id'], 6, '0', STR_PAD_LEFT); ?></strong></td>
+                                                <td>
+                                                    <i class="fas fa-user-circle text-primary"></i>
+                                                    <?php echo $row['cliente_nombre'] . ' ' . $row['cliente_apellido']; ?>
+                                                </td>
+                                                <td class="text-success fw-bold"><?php echo formatear_precio($row['total']); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $iconos = [
+                                                        'efectivo' => 'fa-money-bill-wave',
+                                                        'tarjeta' => 'fa-credit-card',
+                                                        'transferencia' => 'fa-exchange-alt'
+                                                    ];
+                                                    ?>
+                                                    <span class="badge bg-info">
+                                                        <i class="fas <?php echo $iconos[$row['metodo_pago']] ?? 'fa-wallet'; ?>"></i>
+                                                        <?php echo ucfirst($row['metodo_pago']); ?>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-success">
+                                                        <?php echo ucfirst($row['estado']); ?>
+                                                    </span>
+                                                </td>
+                                                <td><?php echo formatear_fecha($row['fecha_venta']); ?></td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm" onclick="verDetalle(<?php echo $row['id']; ?>)" title="Ver Detalle">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-primary btn-sm" onclick="imprimirTicket(<?php echo $row['id']; ?>)" title="Imprimir">
+                                                        <i class="fas fa-print"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php
                                         endwhile;
                                     else:
-                                    ?>
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">
-                                            <i class="fas fa-inbox fa-3x mb-3"></i><br>
-                                            No se encontraron ventas con los filtros aplicados
-                                        </td>
-                                    </tr>
+                                        ?>
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                                                No se encontraron ventas con los filtros aplicados
+                                            </td>
+                                        </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -489,7 +549,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             </div>
         </div>
     </div>
-    
+
     <!-- Modal Nueva Venta -->
     <div class="modal fade" id="modalVenta" tabindex="-1">
         <div class="modal-dialog modal-xl">
@@ -503,15 +563,15 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                         <input type="hidden" name="accion" value="crear_venta">
                         <input type="hidden" name="productos" id="productos_json">
                         <input type="hidden" name="total" id="total_venta">
-                        
+
                         <div class="row">
                             <div class="col-md-8">
                                 <h6 class="mb-3"><i class="fas fa-box"></i> Seleccionar Productos</h6>
                                 <div class="mb-3">
                                     <select class="form-select" id="producto_select">
                                         <option value="">Seleccionar producto...</option>
-                                        <?php 
-                                        while($prod = $result_productos->fetch_assoc()): 
+                                        <?php
+                                        while ($prod = $result_productos->fetch_assoc()):
                                             // Crear array limpio solo con datos necesarios
                                             $producto_datos = [
                                                 'id' => $prod['id'],
@@ -526,14 +586,8 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
-                                
-                                <!-- 🧪 BOTÓN DE PRUEBA TEMPORAL -->
-                                <div class="mb-3">
-                                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="probarAgregarProducto()">
-                                        <i class="fas fa-flask"></i> Agregar Producto de Prueba
-                                    </button>
-                                </div>
-                                
+
+
                                 <div id="carrito-productos">
                                     <div class="empty-cart">
                                         <i class="fas fa-shopping-cart"></i>
@@ -542,17 +596,17 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-4">
                                 <h6 class="mb-3"><i class="fas fa-info-circle"></i> Información de Venta</h6>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Cliente *</label>
                                     <select class="form-select" name="cliente_id" required>
                                         <option value="">Seleccionar...</option>
-                                        <?php 
+                                        <?php
                                         $result_clientes->data_seek(0);
-                                        while($cli = $result_clientes->fetch_assoc()): 
+                                        while ($cli = $result_clientes->fetch_assoc()):
                                         ?>
                                             <option value="<?php echo $cli['id']; ?>">
                                                 <?php echo $cli['nombre'] . ' ' . $cli['apellido']; ?>
@@ -560,7 +614,7 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                         <?php endwhile; ?>
                                     </select>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Método de Pago *</label>
                                     <select class="form-select" name="metodo_pago" required>
@@ -569,9 +623,9 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                                         <option value="transferencia">🔄 Transferencia</option>
                                     </select>
                                 </div>
-                                
+
                                 <hr>
-                                
+
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <h6 class="text-muted mb-2">TOTAL A PAGAR</h6>
@@ -594,60 +648,27 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ⭐ Variables y funciones GLOBALES
+
+
+        // Variables GLOBALES
         var carrito = [];
-        
-        // ⭐ FUNCIÓN DE PRUEBA (GLOBAL)
-        function probarAgregarProducto() {
-            console.log('=== PRUEBA: Agregando producto de prueba ===');
-            const productoPrueba = {
-                id: 999,
-                nombre: 'Producto de Prueba',
-                precio: 100.00,
-                stock: 10
-            };
-            agregarAlCarrito(productoPrueba);
-            alert('Producto de prueba agregado. Revisa el carrito!');
+
+        // Función para formatear precio (CORREGIDA)
+        function formatearPrecio(precio) {
+            return '$' + parseFloat(precio).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
-        
-        // ⭐ Agregar producto al seleccionar
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM cargado, inicializando...');
-            
-            const productoSelect = document.getElementById('producto_select');
-            if (!productoSelect) {
-                console.error('❌ No se encontró el select de productos');
-                return;
-            }
-            
-            console.log('✅ Select de productos encontrado');
-            console.log('Opciones disponibles:', productoSelect.options.length);
-            
-            productoSelect.addEventListener('change', function() {
-            if (this.value) {
-                try {
-                    const producto = JSON.parse(this.value);
-                    console.log('Producto seleccionado:', producto);
-                    agregarAlCarrito(producto);
-                    this.value = '';
-                } catch (error) {
-                    console.error('Error al parsear producto:', error);
-                    alert('Error al agregar producto');
-                }
-            }
-        });
-        
-        // ⭐ Función para agregar al carrito
+
+        // Función para agregar al carrito (GLOBAL)
         function agregarAlCarrito(producto) {
             console.log('Agregando al carrito:', producto);
-            
+
             // Convertir id a número
             const productoId = parseInt(producto.id);
             const existe = carrito.find(p => p.id === productoId);
-            
+
             if (existe) {
                 console.log('Producto ya existe, aumentando cantidad');
                 if (existe.cantidad < parseInt(producto.stock)) {
@@ -668,33 +689,33 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                 carrito.push(nuevoProducto);
                 console.log('Producto agregado:', nuevoProducto);
             }
-            
+
             console.log('Carrito actual:', carrito);
             actualizarCarrito();
         }
-        
-        // ⭐ Función para actualizar el carrito
+
+        // Función para actualizar el carrito (GLOBAL)
         function actualizarCarrito() {
             console.log('=== ACTUALIZANDO CARRITO ===');
             console.log('Cantidad de productos en carrito:', carrito.length);
             console.log('Contenido del carrito:', carrito);
-            
+
             const container = document.getElementById('carrito-productos');
-            
+
             if (!container) {
                 console.error('ERROR: No se encontró el contenedor del carrito');
                 return;
             }
-            
+
             if (carrito.length === 0) {
                 console.log('Carrito vacío, mostrando mensaje');
                 container.innerHTML = `
-                    <div class="empty-cart">
-                        <i class="fas fa-shopping-cart"></i>
-                        <p>No hay productos agregados al carrito</p>
-                        <small class="text-muted">Selecciona productos del menú desplegable</small>
-                    </div>
-                `;
+            <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>No hay productos agregados al carrito</p>
+                <small class="text-muted">Selecciona productos del menú desplegable</small>
+            </div>
+        `;
                 document.getElementById('total_display').innerText = '$0.00';
                 document.getElementById('items_count').innerText = '0 productos';
                 document.getElementById('btnGuardarVenta').disabled = true;
@@ -702,179 +723,208 @@ $result_clientes_filtro = $conn->query($sql_clientes_filtro);
                 document.getElementById('total_venta').value = '0';
                 return;
             }
-            
+
             console.log('Generando HTML del carrito...');
             let html = '';
             let total = 0;
-            
+
             carrito.forEach((prod, index) => {
                 console.log(`Procesando producto ${index}:`, prod);
                 const subtotal = prod.precio * prod.cantidad;
                 total += subtotal;
-                
+
                 html += `
-                    <div class="producto-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="flex-grow-1">
-                                <strong>${prod.nombre}</strong><br>
-                                <small class="text-muted">
-                                    ${formatearPrecio(prod.precio)} × ${prod.cantidad} = 
-                                    <span class="text-success fw-bold">${formatearPrecio(subtotal)}</span>
-                                </small>
-                            </div>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="cambiarCantidad(${index}, -1)" title="Disminuir">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled style="min-width: 50px;">
-                                    <strong>${prod.cantidad}</strong>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-success" onclick="cambiarCantidad(${index}, 1)" title="Aumentar" ${prod.cantidad >= prod.stock ? 'disabled' : ''}>
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
+            <div class="producto-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <strong>${prod.nombre}</strong><br>
+                        <small class="text-muted">
+                            ${formatearPrecio(prod.precio)} × ${prod.cantidad} = 
+                            <span class="text-success fw-bold">${formatearPrecio(subtotal)}</span>
+                        </small>
                     </div>
-                `;
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="cambiarCantidad(${index}, -1)" title="Disminuir">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled style="min-width: 50px;">
+                            <strong>${prod.cantidad}</strong>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="cambiarCantidad(${index}, 1)" title="Aumentar" ${prod.cantidad >= prod.stock ? 'disabled' : ''}>
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${index})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
             });
-            
+
             console.log('Insertando HTML en el contenedor');
             container.innerHTML = html;
-            
+
             console.log('Total calculado:', total);
-            
+
             // Actualizar total con animación
             const totalDisplay = document.getElementById('total_display');
             const itemsCount = document.getElementById('items_count');
             const totalVenta = document.getElementById('total_venta');
             const productosJson = document.getElementById('productos_json');
             const btnGuardar = document.getElementById('btnGuardarVenta');
-            
+
             if (totalDisplay) totalDisplay.innerText = formatearPrecio(total);
             if (itemsCount) itemsCount.innerText = carrito.length + ' producto' + (carrito.length !== 1 ? 's' : '');
             if (totalVenta) totalVenta.value = total.toFixed(2);
-            if (productosJson) productosJson.value = JSON.stringify(carrito);
+            if (productosJson) {
+                const carritoJson = JSON.stringify(carrito);
+                productosJson.value = carritoJson;
+                console.log('JSON guardado:', carritoJson);
+            }
             if (btnGuardar) btnGuardar.disabled = false;
-            
+
             console.log('Carrito actualizado exitosamente');
-            console.log('JSON productos:', JSON.stringify(carrito));
             console.log('=== FIN ACTUALIZACIÓN ===');
         }
-        
-        // ⭐ Cambiar cantidad
+
+        // Cambiar cantidad (GLOBAL)
         function cambiarCantidad(index, cambio) {
             const producto = carrito[index];
             const nuevaCantidad = producto.cantidad + cambio;
-            
+
             if (nuevaCantidad <= 0) {
                 eliminarDelCarrito(index);
                 return;
             }
-            
+
             if (nuevaCantidad > producto.stock) {
                 alert('⚠️ Stock insuficiente. Disponible: ' + producto.stock);
                 return;
             }
-            
+
             producto.cantidad = nuevaCantidad;
             actualizarCarrito();
         }
-        
-        // ⭐ Eliminar del carrito
+
+        // Eliminar del carrito (GLOBAL)
         function eliminarDelCarrito(index) {
             if (confirm('¿Eliminar este producto del carrito?')) {
                 carrito.splice(index, 1);
                 actualizarCarrito();
             }
         }
-        
-        // ⭐ Función auxiliar para formatear precio
-        function formatearPrecio(precio) {
-            return '
-                 + parseFloat(precio).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '                carrito.push({
-                    id: parseInt(producto.id),,');
-        }
-        
-        // ⭐ Ver detalle de venta
+
+
+
+        // Ver detalle de venta (GLOBAL)
         function verDetalle(id) {
             window.location.href = 'detalle_venta.php?id=' + id;
         }
-        
-        // ⭐ Imprimir ticket
+
+        // Imprimir ticket (GLOBAL)
         function imprimirTicket(id) {
             window.open('detalle_venta.php?id=' + id, '_blank');
         }
-        
-        // ⭐ Resetear modal al cerrar
-        document.getElementById('modalVenta').addEventListener('hidden.bs.modal', function () {
-            carrito = [];
-            actualizarCarrito();
-            document.getElementById('formVenta').reset();
-            console.log('Modal cerrado, carrito reseteado');
-        });
-        
-        // ⭐ Validar formulario antes de enviar
-        document.getElementById('formVenta').addEventListener('submit', function(e) {
-            if (carrito.length === 0) {
-                e.preventDefault();
-                alert('⚠️ Debe agregar al menos un producto al carrito');
-                return false;
+
+
+        // INICIALIZACIÓN AL CARGAR EL DOM
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, inicializando...');
+
+            const productoSelect = document.getElementById('producto_select');
+            if (!productoSelect) {
+                console.error('❌ No se encontró el select de productos');
+                return;
             }
-            
-            const clienteId = document.querySelector('select[name="cliente_id"]').value;
-            if (!clienteId) {
-                e.preventDefault();
-                alert('⚠️ Debe seleccionar un cliente');
-                return false;
-            }
-            
-            const metodoPago = document.querySelector('select[name="metodo_pago"]').value;
-            if (!metodoPago) {
-                e.preventDefault();
-                alert('⚠️ Debe seleccionar un método de pago');
-                return false;
-            }
-            
-            console.log('Enviando venta:', {
-                carrito: carrito,
-                total: document.getElementById('total_venta').value,
-                productos_json: document.getElementById('productos_json').value
-            });
-            
-            // Mostrar loading
-            const btn = document.getElementById('btnGuardarVenta');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-        });
-        
-        // ⭐ Log inicial
-        console.log('Script de ventas cargado correctamente');
-        console.log('Carrito inicial:', carrito);
-        
-        // 🧪 FUNCIÓN DE PRUEBA TEMPORAL
-        function probarAgregarProducto() {
-            console.log('=== PRUEBA: Agregando producto de prueba ===');
-            const productoPrueba = {
-                id: 999,
-                nombre: 'Producto de Prueba',
-                precio: 100.00,
-                stock: 10
-            };
-            agregarAlCarrito(productoPrueba);
-            alert('Producto de prueba agregado. Revisa la consola (F12)');
-        }
-        
-        // Verificar que el select existe
-        const selectProducto = document.getElementById('producto_select');
-        if (selectProducto) {
+
             console.log('✅ Select de productos encontrado');
-            console.log('Número de opciones:', selectProducto.options.length);
-        } else {
-            console.error('❌ No se encontró el select de productos');
-        }
+            console.log('Opciones disponibles:', productoSelect.options.length);
+
+            // Event listener para seleccionar producto
+            productoSelect.addEventListener('change', function() {
+                if (this.value) {
+                    try {
+                        const producto = JSON.parse(this.value);
+                        console.log('Producto seleccionado:', producto);
+                        agregarAlCarrito(producto);
+                        this.value = '';
+                    } catch (error) {
+                        console.error('Error al parsear producto:', error);
+                        alert('Error al agregar producto');
+                    }
+                }
+            });
+
+            // ⭐ Resetear modal al cerrar
+            const modalVenta = document.getElementById('modalVenta');
+            if (modalVenta) {
+                modalVenta.addEventListener('hidden.bs.modal', function() {
+                    carrito = [];
+                    actualizarCarrito();
+                    document.getElementById('formVenta').reset();
+                    console.log('Modal cerrado, carrito reseteado');
+                });
+            }
+
+            // ⭐ Validar formulario antes de enviar
+            const formVenta = document.getElementById('formVenta');
+            if (formVenta) {
+                formVenta.addEventListener('submit', function(e) {
+                    console.log('=== INTENTANDO ENVIAR FORMULARIO ===');
+                    console.log('Carrito actual:', carrito);
+                    console.log('productos_json value:', document.getElementById('productos_json').value);
+
+                    if (carrito.length === 0) {
+                        e.preventDefault();
+                        alert('⚠️ Debe agregar al menos un producto al carrito');
+                        return false;
+                    }
+
+                    const clienteId = document.querySelector('select[name="cliente_id"]').value;
+                    if (!clienteId) {
+                        e.preventDefault();
+                        alert('⚠️ Debe seleccionar un cliente');
+                        return false;
+                    }
+
+                    const metodoPago = document.querySelector('select[name="metodo_pago"]').value;
+                    if (!metodoPago) {
+                        e.preventDefault();
+                        alert('⚠️ Debe seleccionar un método de pago');
+                        return false;
+                    }
+
+                    // Verificar que productos_json tenga contenido
+                    const productosJson = document.getElementById('productos_json').value;
+                    if (!productosJson || productosJson === '' || productosJson === '[]') {
+                        e.preventDefault();
+                        alert('⚠️ Error: El carrito está vacío');
+                        console.error('productos_json está vacío!');
+                        return false;
+                    }
+
+                    console.log('Enviando venta:', {
+                        carrito: carrito,
+                        total: document.getElementById('total_venta').value,
+                        productos_json: productosJson
+                    });
+
+                    // Mostrar loading
+                    const btn = document.getElementById('btnGuardarVenta');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+                    return true;
+                });
+            }
+
+            // Log inicial
+            console.log('Script de ventas cargado correctamente');
+            console.log('Carrito inicial:', carrito);
+        });
     </script>
 </body>
+
 </html>

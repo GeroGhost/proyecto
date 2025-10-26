@@ -5,7 +5,7 @@ require_once 'config.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['accion'])) {
         $accion = $_POST['accion'];
-        
+
         if ($accion === 'crear') {
             $nombre = limpiar_entrada($_POST['nombre']);
             $apellido = limpiar_entrada($_POST['apellido']);
@@ -13,11 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $telefono = limpiar_entrada($_POST['telefono']);
             $dni = limpiar_entrada($_POST['dni']);
             $direccion = limpiar_entrada($_POST['direccion']);
-            
+
             $sql = "INSERT INTO clientes (nombre, apellido, email, telefono, dni, direccion) VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("ssssss", $nombre, $apellido, $email, $telefono, $dni, $direccion);
-            
+
             if ($stmt->execute()) {
                 $mensaje = "Cliente creado exitosamente";
                 $tipo_mensaje = "success";
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tipo_mensaje = "danger";
             }
         }
-        
+
         if ($accion === 'editar') {
             $id = intval($_POST['id']);
             $nombre = limpiar_entrada($_POST['nombre']);
@@ -35,11 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $telefono = limpiar_entrada($_POST['telefono']);
             $dni = limpiar_entrada($_POST['dni']);
             $direccion = limpiar_entrada($_POST['direccion']);
-            
+
             $sql = "UPDATE clientes SET nombre=?, apellido=?, email=?, telefono=?, dni=?, direccion=? WHERE id=?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("ssssssi", $nombre, $apellido, $email, $telefono, $dni, $direccion, $id);
-            
+
             if ($stmt->execute()) {
                 $mensaje = "Cliente actualizado exitosamente";
                 $tipo_mensaje = "success";
@@ -48,13 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tipo_mensaje = "danger";
             }
         }
-        
+
         if ($accion === 'eliminar') {
             $id = intval($_POST['id']);
             $sql = "UPDATE clientes SET estado=0 WHERE id=?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $id);
-            
+
             if ($stmt->execute()) {
                 $mensaje = "Cliente desactivado exitosamente";
                 $tipo_mensaje = "success";
@@ -72,6 +72,7 @@ $result_clientes = $conn->query($sql_clientes);
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,16 +87,22 @@ $result_clientes = $conn->query($sql_clientes);
             --warning: #f6c23e;
             --danger: #e74a3b;
         }
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #f8f9fc;
         }
-        #wrapper { display: flex; }
+
+        #wrapper {
+            display: flex;
+        }
+
         #sidebar-wrapper {
             min-height: 100vh;
             width: 224px;
             background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
         }
+
         .sidebar-brand {
             height: 4.375rem;
             text-decoration: none;
@@ -108,35 +115,61 @@ $result_clientes = $conn->query($sql_clientes);
             align-items: center;
             justify-content: center;
         }
+
         .nav-link {
             display: flex;
             align-items: center;
             padding: 1rem;
-            color: rgba(255,255,255,.8);
+            color: rgba(255, 255, 255, .8);
             text-decoration: none;
             transition: all 0.3s;
         }
-        .nav-link:hover, .nav-link.active {
+
+        .nav-link:hover,
+        .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255, 255, 255, .1);
         }
-        .nav-link i { width: 2rem; font-size: 0.85rem; }
-        #content-wrapper { flex: 1; display: flex; flex-direction: column; }
+
+        .nav-link i {
+            width: 2rem;
+            font-size: 0.85rem;
+        }
+
+        #content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .topbar {
             height: 4.375rem;
             background-color: #fff;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
+
         .card {
             border: none;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
         }
-        .table-responsive { max-height: 600px; overflow-y: auto; }
-        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.875rem; }
-        .badge { padding: 0.5em 0.75em; }
+
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            padding: 0.5em 0.75em;
+        }
     </style>
 </head>
+
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
@@ -203,7 +236,7 @@ $result_clientes = $conn->query($sql_clientes);
                 </a>
             </li>
         </ul>
-        
+
         <!-- Content -->
         <div id="content-wrapper">
             <nav class="navbar navbar-expand topbar mb-4 static-top">
@@ -215,7 +248,7 @@ $result_clientes = $conn->query($sql_clientes);
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="container-fluid">
                 <?php if (isset($mensaje)): ?>
                     <div class="alert alert-<?php echo $tipo_mensaje; ?> alert-dismissible fade show">
@@ -223,14 +256,14 @@ $result_clientes = $conn->query($sql_clientes);
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-                
+
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Gestión de Clientes</h1>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCliente">
                         <i class="fas fa-plus"></i> Nuevo Cliente
                     </button>
                 </div>
-                
+
                 <div class="card">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold" style="color: var(--primary);">Lista de Clientes</h6>
@@ -251,28 +284,28 @@ $result_clientes = $conn->query($sql_clientes);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($row = $result_clientes->fetch_assoc()): ?>
-                                    <tr>
-                                        <td><?php echo $row['id']; ?></td>
-                                        <td><?php echo $row['nombre'] . ' ' . $row['apellido']; ?></td>
-                                        <td><?php echo $row['dni']; ?></td>
-                                        <td><?php echo $row['email']; ?></td>
-                                        <td><?php echo $row['telefono']; ?></td>
-                                        <td><?php echo substr($row['direccion'], 0, 30); ?>...</td>
-                                        <td>
-                                            <span class="badge <?php echo $row['estado'] ? 'bg-success' : 'bg-secondary'; ?>">
-                                                <?php echo $row['estado'] ? 'Activo' : 'Inactivo'; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-info btn-sm" onclick="editarCliente(<?php echo htmlspecialchars(json_encode($row)); ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="eliminarCliente(<?php echo $row['id']; ?>)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <?php while ($row = $result_clientes->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?php echo $row['id']; ?></td>
+                                            <td><?php echo $row['nombre'] . ' ' . $row['apellido']; ?></td>
+                                            <td><?php echo $row['dni']; ?></td>
+                                            <td><?php echo $row['email']; ?></td>
+                                            <td><?php echo $row['telefono']; ?></td>
+                                            <td><?php echo substr($row['direccion'], 0, 30); ?>...</td>
+                                            <td>
+                                                <span class="badge <?php echo $row['estado'] ? 'bg-success' : 'bg-secondary'; ?>">
+                                                    <?php echo $row['estado'] ? 'Activo' : 'Inactivo'; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-info btn-sm" onclick="editarCliente(<?php echo htmlspecialchars(json_encode($row)); ?>)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" onclick="eliminarCliente(<?php echo $row['id']; ?>)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
                                     <?php endwhile; ?>
                                 </tbody>
                             </table>
@@ -282,7 +315,7 @@ $result_clientes = $conn->query($sql_clientes);
             </div>
         </div>
     </div>
-    
+
     <!-- Modal Cliente -->
     <div class="modal fade" id="modalCliente" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -295,7 +328,7 @@ $result_clientes = $conn->query($sql_clientes);
                     <div class="modal-body">
                         <input type="hidden" name="accion" id="accion" value="crear">
                         <input type="hidden" name="id" id="cliente_id">
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre</label>
@@ -306,7 +339,7 @@ $result_clientes = $conn->query($sql_clientes);
                                 <input type="text" class="form-control" name="apellido" id="apellido" required>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">DNI</label>
@@ -317,12 +350,12 @@ $result_clientes = $conn->query($sql_clientes);
                                 <input type="text" class="form-control" name="telefono" id="telefono" required>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Email</label>
                             <input type="email" class="form-control" name="email" id="email">
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Dirección</label>
                             <textarea class="form-control" name="direccion" id="direccion" rows="2"></textarea>
@@ -336,7 +369,7 @@ $result_clientes = $conn->query($sql_clientes);
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         function editarCliente(cliente) {
@@ -349,10 +382,10 @@ $result_clientes = $conn->query($sql_clientes);
             document.getElementById('telefono').value = cliente.telefono;
             document.getElementById('email').value = cliente.email;
             document.getElementById('direccion').value = cliente.direccion;
-            
+
             new bootstrap.Modal(document.getElementById('modalCliente')).show();
         }
-        
+
         function eliminarCliente(id) {
             if (confirm('¿Está seguro de desactivar este cliente?')) {
                 const form = document.createElement('form');
@@ -365,12 +398,13 @@ $result_clientes = $conn->query($sql_clientes);
                 form.submit();
             }
         }
-        
-        document.getElementById('modalCliente').addEventListener('hidden.bs.modal', function () {
+
+        document.getElementById('modalCliente').addEventListener('hidden.bs.modal', function() {
             document.getElementById('formCliente').reset();
             document.getElementById('modalTitle').innerText = 'Nuevo Cliente';
             document.getElementById('accion').value = 'crear';
         });
     </script>
 </body>
+
 </html>

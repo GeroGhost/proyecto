@@ -13,17 +13,46 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #4e73df; color: white; font-weight: bold; }
-        .total-row { background-color: #f0f0f0; font-weight: bold; }
-        .titulo { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
-        .fecha { color: #666; margin-bottom: 10px; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4e73df;
+            color: white;
+            font-weight: bold;
+        }
+
+        .total-row {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .titulo {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .fecha {
+            color: #666;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
+
 <body>
     <div class="titulo">REPORTE DE VENTAS - SISTEMA DE VENTAS</div>
     <div class="fecha">Generado el: <?php echo date('d/m/Y H:i:s'); ?></div>
@@ -51,18 +80,18 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
                                ORDER BY v.fecha_venta DESC";
                 $result_ventas = $conn->query($sql_ventas);
                 $total_general = 0;
-                
-                while($venta = $result_ventas->fetch_assoc()):
+
+                while ($venta = $result_ventas->fetch_assoc()):
                     $total_general += $venta['total'];
                 ?>
-                <tr>
-                    <td><?php echo $venta['id']; ?></td>
-                    <td><?php echo $venta['cliente']; ?></td>
-                    <td><?php echo date('d/m/Y H:i', strtotime($venta['fecha_venta'])); ?></td>
-                    <td><?php echo ucfirst($venta['metodo_pago']); ?></td>
-                    <td><?php echo number_format($venta['total'], 2, ',', '.'); ?></td>
-                    <td><?php echo ucfirst($venta['estado']); ?></td>
-                </tr>
+                    <tr>
+                        <td><?php echo $venta['id']; ?></td>
+                        <td><?php echo $venta['cliente']; ?></td>
+                        <td><?php echo date('d/m/Y H:i', strtotime($venta['fecha_venta'])); ?></td>
+                        <td><?php echo ucfirst($venta['metodo_pago']); ?></td>
+                        <td><?php echo number_format($venta['total'], 2, ',', '.'); ?></td>
+                        <td><?php echo ucfirst($venta['estado']); ?></td>
+                    </tr>
                 <?php endwhile; ?>
                 <tr class="total-row">
                     <td colspan="4" style="text-align: right;">TOTAL GENERAL:</td>
@@ -98,15 +127,15 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
                                   GROUP BY p.id
                                   ORDER BY vendido DESC";
                 $result_productos = $conn->query($sql_productos);
-                
-                while($prod = $result_productos->fetch_assoc()):
+
+                while ($prod = $result_productos->fetch_assoc()):
                 ?>
-                <tr>
-                    <td><?php echo $prod['nombre']; ?></td>
-                    <td><?php echo $prod['vendido']; ?></td>
-                    <td><?php echo number_format($prod['ingresos'], 2, ',', '.'); ?></td>
-                    <td><?php echo $prod['stock']; ?></td>
-                </tr>
+                    <tr>
+                        <td><?php echo $prod['nombre']; ?></td>
+                        <td><?php echo $prod['vendido']; ?></td>
+                        <td><?php echo number_format($prod['ingresos'], 2, ',', '.'); ?></td>
+                        <td><?php echo $prod['stock']; ?></td>
+                    </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
@@ -135,24 +164,24 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
                             GROUP BY c.id
                             ORDER BY total DESC";
                 $result_cat = $conn->query($sql_cat);
-                
+
                 // Calcular total
                 $total_cat = 0;
                 $categorias = [];
-                while($row = $result_cat->fetch_assoc()) {
+                while ($row = $result_cat->fetch_assoc()) {
                     $categorias[] = $row;
                     $total_cat += $row['total'];
                 }
-                
+
                 // Mostrar con porcentajes
-                foreach($categorias as $cat):
+                foreach ($categorias as $cat):
                     $porcentaje = ($total_cat > 0) ? ($cat['total'] / $total_cat * 100) : 0;
                 ?>
-                <tr>
-                    <td><?php echo $cat['nombre']; ?></td>
-                    <td><?php echo number_format($cat['total'], 2, ',', '.'); ?></td>
-                    <td><?php echo number_format($porcentaje, 1); ?>%</td>
-                </tr>
+                    <tr>
+                        <td><?php echo $cat['nombre']; ?></td>
+                        <td><?php echo number_format($cat['total'], 2, ',', '.'); ?></td>
+                        <td><?php echo number_format($porcentaje, 1); ?>%</td>
+                    </tr>
                 <?php endforeach; ?>
                 <tr class="total-row">
                     <td>TOTAL:</td>
@@ -189,15 +218,15 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
                                  ORDER BY total_compras DESC
                                  LIMIT 10";
                 $result_clientes = $conn->query($sql_clientes);
-                
-                while($cliente = $result_clientes->fetch_assoc()):
+
+                while ($cliente = $result_clientes->fetch_assoc()):
                 ?>
-                <tr>
-                    <td><?php echo $cliente['cliente']; ?></td>
-                    <td><?php echo $cliente['dni']; ?></td>
-                    <td><?php echo number_format($cliente['total_compras'], 2, ',', '.'); ?></td>
-                    <td><?php echo $cliente['cantidad_compras']; ?></td>
-                </tr>
+                    <tr>
+                        <td><?php echo $cliente['cliente']; ?></td>
+                        <td><?php echo $cliente['dni']; ?></td>
+                        <td><?php echo number_format($cliente['total_compras'], 2, ',', '.'); ?></td>
+                        <td><?php echo $cliente['cantidad_compras']; ?></td>
+                    </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
@@ -227,20 +256,20 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
                              GROUP BY fecha_movimiento
                              ORDER BY fecha_movimiento DESC";
                 $result_caja = $conn->query($sql_caja);
-                
+
                 $total_ingresos = 0;
                 $total_egresos = 0;
-                
-                while($caja = $result_caja->fetch_assoc()):
+
+                while ($caja = $result_caja->fetch_assoc()):
                     $total_ingresos += $caja['ingresos'];
                     $total_egresos += $caja['egresos'];
                 ?>
-                <tr>
-                    <td><?php echo date('d/m/Y', strtotime($caja['fecha_movimiento'])); ?></td>
-                    <td><?php echo number_format($caja['ingresos'], 2, ',', '.'); ?></td>
-                    <td><?php echo number_format($caja['egresos'], 2, ',', '.'); ?></td>
-                    <td><?php echo number_format($caja['saldo'], 2, ',', '.'); ?></td>
-                </tr>
+                    <tr>
+                        <td><?php echo date('d/m/Y', strtotime($caja['fecha_movimiento'])); ?></td>
+                        <td><?php echo number_format($caja['ingresos'], 2, ',', '.'); ?></td>
+                        <td><?php echo number_format($caja['egresos'], 2, ',', '.'); ?></td>
+                        <td><?php echo number_format($caja['saldo'], 2, ',', '.'); ?></td>
+                    </tr>
                 <?php endwhile; ?>
                 <tr class="total-row">
                     <td>TOTALES:</td>
@@ -258,6 +287,7 @@ $tipo_reporte = isset($_GET['tipo']) ? $_GET['tipo'] : 'general';
         <strong>Fecha y Hora:</strong> <?php echo date('d/m/Y H:i:s'); ?>
     </p>
 </body>
+
 </html>
 <?php
 $conn->close();
