@@ -1,6 +1,8 @@
 <?php
 require_once 'config.php';
 
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
 // Configurar headers para descarga de Excel
 header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
 header('Content-Disposition: attachment; filename="reporte_ventas_' . date('Y-m-d') . '.xls"');
